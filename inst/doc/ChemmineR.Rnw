@@ -371,7 +371,16 @@ The following example uses the clustering result obtained above using cutoff val
 cluster.sizestat(clusters)
 @
 
+<<<<<<< .working
 Based on this size statistics, clusters of size 3 or larger will be included in the following MDS visualization step.
+=======
+\noindent Return main components of APset objects:
+<<eval=FALSE, keep.source=TRUE>>=
+cid(apset[1:4]) # Compound IDs from apset
+ap(apset[1:4]) # Atom pair descriptors
+db.explain(apset[1]) # Return atom pairs in human readable format
+@
+>>>>>>> .merge-right.r53044
 
 <<fig=TRUE>>=
 coord <- cluster.visualize(db, clusters, 3, quiet=TRUE)
