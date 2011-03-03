@@ -743,8 +743,8 @@ apset2descdb <- function(apset) {
 #################################################
 validSDF <- function(x) {
         if(class(x)!="SDFset") warning("x needs to be of class SDFset")
-	ab <- atomblock(sdfset); abcol <- sapply(names(ab), function(x) length(ab[[x]][1,]))
-        bb <- bondblock(sdfset); bbcol <- sapply(names(bb), function(x) length(bb[[x]][1,]))
+	ab <- atomblock(x); abcol <- sapply(names(ab), function(x) length(ab[[x]][1,]))
+        bb <- bondblock(x); bbcol <- sapply(names(bb), function(x) length(bb[[x]][1,]))
         validsdf <- abcol >= 3 | bbcol >= 3
         return(validsdf)
 }
