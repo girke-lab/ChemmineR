@@ -1,0 +1,1077 @@
+% Manual compile
+% Sweave("ChemmineR.Rnw"); system("pdflatex ChemmineR.tex; bibtex ChemmineR; pdflatex ChemmineR.tex; pdflatex ChemmineR.tex")
+% NOTE -- ONLY EDIT THE .Rnw FILE!!!  The .tex file is
+% likely to be overwritten.
+%
+% \VignetteIndexEntry{gpls Tutorial}
+% \VignetteDepends{}
+% \VignetteKeywords{}
+% \VignettePackage{gpls}
+\documentclass[11pt, letterpaper]{article}
+% Enlage printing area
+\usepackage{a4wide}
+	
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage[authoryear,round]{natbib}
+\usepackage{hyperref}
+\usepackage{url}
+
+\newcommand{\comment}[1]{}
+\newcommand{\Rfunction}[1]{{\texttt{#1}}}
+\newcommand{\Robject}[1]{{\texttt{#1}}}
+\newcommand{\Rpackage}[1]{{\textit{#1}}}
+\newcommand{\Rmethod}[1]{{\texttt{#1}}}
+\newcommand{\Rfunarg}[1]{{\texttt{#1}}}
+\newcommand{\Rclass}[1]{{\textit{#1}}}
+	
+% Define header and footer area with fandyhdr package (see: http://www.ctan.org/tex-archive/macros/latex/contrib/fancyhdr/fancyhdr.pdf)
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhead{}
+\fancyfoot{}
+\rhead{\nouppercase{\leftmark}}
+\lhead{\textit{ChemMineR Manual}}
+\rfoot{\thepage}
+
+<<echo=FALSE>>=
+options(width=80)
+@
+%\parindent 0in
+
+\bibliographystyle{plainnat}
+
+\begin{document}
+\title{ChemmineR-V2: Analysis of Small Molecule and Screening Data}
+\author{Yiqun Cao, Tyler Backman, Yan Wang, Thomas Girke \\
+ Email contact: thomas.girke@ucr.edu}
+\maketitle
+
+\section{Introduction}
+\markboth{Introduction}{} % Only required to print section title in header field without numbering. 
+
+\Rpackage{ChemmineR} is an R package for analyzing small molecule and screening data. Its new version ChemmineR-V2 contains functions for processing SDFs (structure data files), molecule depictions, structural similarity searching, clustering/diversity analyses of compound libraries with a wide spectrum of algorithms and utilities for managing complex data sets from high-throughput compound bio-assays. 
+
+\begin{figure}[bthp]
+  \centering
+   \includegraphics[width=\textwidth]{overview.png}
+   \caption{Selected functionalities provided by the \Rpackage{ChemmineR}
+   package.}
+   \label{fig:overview}
+\end{figure}
+
+\noindent In addition, \Rpackage{ChemmineR} offers visualization functions for compound clustering results and chemical structures. The integration of chemoinformatic tools with the R programming environment has many advantages, such as easy access to a wide spectrum of statistical methods, machine learning algorithms and graphic utilities. The first version of this package was published in \cite{Cao2008c}. Since then many additional utilities have been added to the package and many more are under development for future releases. 
+
+\section{Getting Started}
+\markboth{Getting Started}{} % Only required to print section title in header field without numbering. 
+
+\subsection{Installation}
+The R software for running ChemmineR can be downloaded from CRAN (\url{http://cran.at.r-project.org/}). The ChemmineR package can be installed from R using the \Rfunction{bioLite} install command. 
+<<eval=FALSE>>=
+source("http://bioconductor.org/biocLite.R") # Sources the biocLite.R installation script.
+biocLite("ChemmineR") # Installs the package.
+@
+
+\subsection{Loading the Package and Documentation}
+
+<<eval=TRUE, keep.source=TRUE>>=
+library("ChemmineR") # Loads the package
+@
+<<eval=FALSE, keep.source=TRUE>>=
+library(help="ChemmineR") # Lists all functions and classes 
+vignette("ChemmineR") # Opens this PDF manual from R
+@
+
+\subsection{Five Minute Tutorial}
+The following code gives an overview of the most important functionalities provided by \Rpackage{ChemmineR}. Copy and paste of the commands into the R console will demonstrate their utilities. \\
+
+\noindent Create Instances of \Rclass{SDFset} class:
+<<eval=TRUE, keep.source=TRUE>>=
+data(sdfsample)
+sdfset <- sdfsample
+sdfset # Returns summary of SDFset
+sdfset[1:4] # Subsetting of object 
+sdfset[[1]] # Returns summarized content of one SDF
+<<eval=FALSE, keep.source=TRUE>>=
+view(sdfset[1:4]) # Returns summarized content of many SDFs, not printed here
+as(sdfset[1:4], "list") # Returns complete content of many SDFs, not printed here
+@
+
+\noindent An \Rclass{SDFset} is created during the import of an SD file:
+<<eval=FALSE, keep.source=TRUE>>=
+sdfset <- read.SDFset("http://faculty.ucr.edu/~tgirke/Documents/
+                       R_BioCond/Samples/sdfsample.sdf")
+@
+
+\noindent Miscellaneous accessor methods for \Rclass{SDFset} container:
+<<eval=FALSE, keep.source=TRUE>>=
+header(sdfset[1:4]) # Not printed here
+<<eval=TRUE, keep.source=TRUE>>=
+header(sdfset[[1]])
+<<eval=FALSE, keep.source=TRUE>>=
+atomblock(sdfset[1:4]) # Not printed here
+<<eval=TRUE, keep.source=TRUE>>=
+atomblock(sdfset[[1]])[1:4,]
+<<eval=FALSE, keep.source=TRUE>>=
+bondblock(sdfset[1:4]) # Not printed here
+<<eval=TRUE, keep.source=TRUE>>=
+bondblock(sdfset[[1]])[1:4,] 
+<<eval=FALSE, keep.source=TRUE>>=
+datablock(sdfset[1:4]) # Not printed here
+<<eval=TRUE, keep.source=TRUE>>=
+datablock(sdfset[[1]])[1:4]
+@
+
+\noindent Assigning compound IDs and keeping them unique:
+<<eval=TRUE, keep.source=TRUE>>=
+cid(sdfset)[1:4] # Returns IDs from SDFset object
+sdfid(sdfset)[1:4] # Returns IDs from SD file header block
+unique_ids <- makeUnique(sdfid(sdfset))
+cid(sdfset) <- unique_ids
+@
+
+\noindent Converting the data blocks in an \Rclass{SDFset} to a matrix:
+<<eval=TRUE, keep.source=TRUE>>=
+blockmatrix <- datablock2ma(datablocklist=datablock(sdfset))
+   # Converts data block to matrix   
+numchar <- splitNumChar(blockmatrix=blockmatrix) 
+   # Splits to numeric and character matrix
+numchar[[1]][1:2,1:2] # Slice of numeric matrix
+numchar[[2]][1:2,10:11] # Slice of character matrix
+@
+
+\noindent Compute atom frequency matrix, molecular weight and formula:
+<<eval=TRUE, keep.source=TRUE>>=
+propma <- data.frame(MF=MF(sdfset), MW=MW(sdfset), atomcountMA(sdfset))
+propma[1:4, ]
+@
+
+\noindent Assign matrix data to data block:
+<<eval=TRUE, keep.source=TRUE>>=
+datablock(sdfset) <- propma
+datablock(sdfset[1])
+@
+
+\noindent String searching in \Rclass{SDFset} ():
+<<eval=FALSE, keep.source=TRUE>>=
+grepSDFset("650001", sdfset, field="datablock", mode="subset") 
+   # Returns summary view of matches. Not printed here.
+.
+@
+<<eval=TRUE, keep.source=TRUE>>=
+grepSDFset("650001", sdfset, field="datablock", mode="index") 
+@
+
+\noindent Export SDFset to SD file:
+<<eval=FALSE, keep.source=TRUE>>=
+write.SDF(sdfset[1:4], file="sub.sdf", sig=TRUE)
+@
+
+\noindent Plot molecule structure of one or many SDFs:
+<<plotstruct, eval=TRUE, fig=TRUE, keep.source=TRUE>>=
+plot(sdfset[1:4], print=FALSE) # Plots structures to R graphics device
+@
+
+<<eval=FALSE, keep.source=TRUE>>=
+sdf.visualize(sdfset[1:4]) # Compound viewing in web browser
+@
+\begin{figure}[bthp]
+  \centering
+   \includegraphics[width=\textwidth]{visualizescreenshot.png} 
+   \caption{Visualization webpage created by calling \Rfunction{sdf.visualize}.}
+   \label{fig:visualize}
+\end{figure}
+
+\noindent Structure similarity searching and clustering:
+<<eval=FALSE, keep.source=TRUE>>=
+apset <- sdf2ap(sdfset) 
+   # Generate atom pair descriptor database for searching
+.
+@
+<<eval=TRUE, keep.source=TRUE>>=
+data(apset)
+   # Load sample apset data provided by library.
+cmp.search(apset, apset[1], type=3, cutoff = 0.3, quiet=TRUE) 
+   # Search apset database with single compound.
+cmp.cluster(db=apset, cutoff = c(0.65, 0.5), quiet=TRUE)[1:4,] 
+   # Binning clustering using variable similarity cutoffs.
+@
+
+\section{Overview of Classes and Functions}
+\markboth{Overview of Classes and Functions}{} % Only required to print section title in header field without numbering. 
+The following list gives an overview of the most important S4 classes, methods and functions available in the ChemmineR package. The help documents of the package provide much more detailed information on each utility. The standard R help documents for these utilities can be accessed with this syntax: \Rfunction{?function\_name} (\textit{e.g.} \Rfunction{?cid}) and \Rfunction{?class\_name-class} (\textit{e.g}. \Rfunction{?"SDFset-class"}).
+
+\subsection{Molecular Structure Data}
+\noindent \textit{Classes}
+        \begin{itemize}
+            \item \Rclass{SDFstr}: intermediate string class to facilitate SD file import; not important for end user
+            \item \Rclass{SDF}: container for single molecule imported from an SD file
+            \item \Rclass{SDFset}: container for many SDF objects; most important structure container for end user 
+        \end{itemize}
+
+\noindent \textit{Functions/Methods}
+        \begin{itemize}
+            \item Accessor methods for \Rclass{SDF/SDFset}
+                  \begin{itemize}
+                      \item Object slots: \Rfunction{cid, header, atomblock, bondblock, datablock (sdfid, datablocktag)}
+                      \item Summary of \Rclass{SDFset}: \Rfunction{view}
+                      \item Matrix conversion of data block: \Rfunction{datablock2ma, splitNumChar}
+                      \item String search in SDFset: \Rfunction{grepSDFset}
+                  \end{itemize}
+
+            \item Coerce one class to another
+                  \begin{itemize}
+                      \item Standard syntax \Rfunction{as(..., "...")} works in most cases. For details see R help with \Rclass{?"SDFset-class"}.
+                  \end{itemize}
+
+            \item Utilities
+                  \begin{itemize}
+                      \item Atom frequencies: \Rfunction{atomcountMA, atomcount}
+                      \item Molecular weight: \Rfunction{MW}
+                      \item Molecular formula: \Rfunction{MF}
+                  \end{itemize}
+
+            \item Compound structure depictions
+                  \begin{itemize}
+                      \item R graphics device: \Rfunction{plot, plotStruc}
+                      \item Online: \Rfunction{cmp.visualize}
+                  \end{itemize}
+        \end{itemize}
+
+\subsection{Structure Descriptor Data}
+\noindent \textit{Classes}
+        \begin{itemize}
+                \item \Rclass{AP}: container for atom pair descriptors of a single molecule
+                \item \Rclass{APset}: container for many AP objects; most important structure descriptor container for end user 
+        \end{itemize}
+
+\noindent \textit{Functions/Methods}
+        \begin{itemize}
+            \item Create \Rclass{AP/APset} instances
+                  \begin{itemize}
+                      \item From \Rclass{SDFset}: \Rfunction{sdf2ap}
+                      \item From SD file: \Rfunction{cmp.parse}
+                      \item Summary of \Rclass{AP/APset}: \Rfunction{view, db.explain}
+                  \end{itemize}
+
+            \item Accessor methods for AP/APset
+                  \begin{itemize}
+                      \item Object slots: \Rfunction{ap, cid}
+                  \end{itemize}
+
+            \item Coerce one class to another
+                  \begin{itemize}
+                      \item Standard syntax \Rfunction{as(..., "...")} works in most cases. For details see R help with \Rclass{?"APset-class"}.
+                  \end{itemize}
+
+            \item Structure Similarity comparisons and Searching
+                  \begin{itemize}
+                      \item Compute pairwise similarities : \Rfunction{cmp.similarity}
+                      \item Search APset database: \Rfunction{cmp.search}
+                      \item Compute pairwise similarities : \Rfunction{cmp.similarity}
+                  \end{itemize}
+                      
+            \item AP-based Structure Similarity Clustering
+                  \begin{itemize}
+                      \item Single-linkage binning clustering: \Rfunction{cmp.cluster}
+                      \item Visualize clustering result with MDS: \Rfunction{cluster.visualize}
+                      \item Size distribution of clusters: \Rfunction{cluster.sizestat}
+                  \end{itemize}
+        \end{itemize}
+
+
+\section{Importing Compounds}
+\markboth{Importing Compounds}{} % Only required to print section title in header field without numbering. 
+The following code gives an overview of the most important import/export functionalities provided by \Rpackage{ChemmineR}.
+The example creates an instance of the \Rclass{SDFset} class using as sample data set the first 100 compounds from this PubChem SD file (SDF): Compound\_00650001\_00675000.sdf.gz (\url{ftp://ftp.ncbi.nih.gov/pubchem/Compound/CURRENT-Full/SDF/}). \\
+
+\noindent SDFs can be imported with the \Rfunction{read.SDFset} function:
+<<eval=FALSE, keep.source=TRUE>>=
+sdfset <- read.SDFset("http://faculty.ucr.edu/~tgirke/Documents/
+                       R_BioCond/Samples/sdfsample.sdf")
+@
+<<eval=TRUE, keep.source=TRUE>>=
+data(sdfsample) # Loads the same SDFset provided by the library
+sdfset <- sdfsample 
+valid <- validSDF(sdfset) # Identifies invalid SDFs in SDFset objects
+sdfset <- sdfset[valid] # Removes invalid SDFs, if there are any
+@
+
+\noindent Import SD file into \Rclass{SDFstr} container:
+<<eval=FALSE, keep.source=TRUE>>=
+sdfstr <- read.SDFstr("http://faculty.ucr.edu/~tgirke/Documents/
+                       R_BioCond/Samples/sdfsample.sdf")
+@
+\noindent Create \Rclass{SDFset} from \Rclass{SDFstr} class:
+<<eval=TRUE, keep.source=TRUE>>=
+sdfstr <- as(sdfset, "SDFstr")
+sdfstr
+as(sdfstr, "SDFset") 
+@
+
+\section{Export of Compounds}
+\markboth{Export of Compounds}{} % Only required to print section title in header field without numbering. 
+\noindent Write objects of classes \Rclass{SDFset/SDFstr/SDF} to SD file:
+<<eval=FALSE, keep.source=TRUE>>=
+write.SDF(sdfset[1:4], file="sub.sdf")
+@ 
+    
+\noindent Writing customized \Rclass{SDFset} to file containing \Rpackage{ChemmineR} signature, IDs from \Rclass{SDFset} and no data block:
+<<eval=FALSE, keep.source=TRUE>>=
+write.SDF(sdfset[1:4], file="sub.sdf", sig=TRUE, cid=TRUE, db=NULL)
+@
+    
+\noindent Example for injecting a custom matrix/data frame into the data block of an \Rclass{SDFset} and then writing it to an SD file:
+<<eval=FALSE, keep.source=TRUE>>=
+props <- data.frame(MF=MF(sdfset), MW=MW(sdfset), atomcountMA(sdfset))
+datablock(sdfset) <- props
+write.SDF(sdfset[1:4], file="sub.sdf", sig=TRUE, cid=TRUE)
+@
+
+\noindent Indirect export via \Rclass{SDFstr} object:
+<<eval=FALSE, keep.source=TRUE>>=
+sdf2str(sdf=sdfset[[1]], sig=TRUE, cid=TRUE) 
+   # Uses default components
+sdf2str(sdf=sdfset[[1]], head=letters[1:4], db=NULL) 
+   # Uses custom components for header and data block
+@
+
+\noindent Write \Rclass{SDF}, \Rclass{SDFset} or \Rclass{SDFstr} classes to file:
+<<eval=FALSE, keep.source=TRUE>>=
+write.SDF(sdfset[1:4], file="sub.sdf", sig=TRUE, cid=TRUE, db=NULL)
+write.SDF(sdfstr[1:4], file="sub.sdf")
+cat(unlist(as(sdfstr[1:4], "list")), file="sub.sdf", sep="\n")
+@
+
+\section{Working with SDF/SDFset Classes}
+\markboth{Working with SDF/SDFset Classes}{} % Only required to print section title in header field without numbering. 
+\noindent Several methods are available to return the different data components of \Rclass{SDF/SDFset} containers in batches. The following examples 
+list the most important ones. To save space their content is not printed in the manual. 
+<<eval=FALSE, keep.source=TRUE>>=
+view(sdfset[1:4]) # Summary view of several molecules
+length(sdfset) # Returns number of molecules
+sdfset[[1]] # Returns single molecule from SDFset as SDF object
+sdfset[[1]][[2]] # Returns atom block from first compound as matrix
+sdfset[[1]][[2]][1:4,] 
+c(sdfset[1:4], sdfset[5:8]) # Concatenation of several SDFsets
+@
+
+\noindent The \Rfunction{grepSDFset} function allows string matching/searching on the different data components in \Rclass{SDFset}. By default the function returns a SDF summary of the matching entries. Alternatively, an index of the matches can be returned with the setting \emph{mode="index"}.
+<<eval=FALSE, keep.source=TRUE>>=
+grepSDFset("650001", sdfset, field="datablock", mode="subset") 
+   # To return index, set mode="index")
+.
+@
+
+\noindent Utilities to maintain unique compound IDs:
+<<eval=FALSE, keep.source=TRUE>>=
+sdfid(sdfset[1:4])
+   # Retrieves CMP IDs from Molecule Name field in header block.
+cid(sdfset[1:4])
+   # Retrieves CMP IDs from ID slot in SDFset.
+unique_ids <- makeUnique(sdfid(sdfset)) 
+   # Creates unique IDs by appending a counter to duplicates.
+cid(sdfset) <- unique_ids # Assigns uniquified IDs to ID slot
+@
+
+\noindent Subsetting by character, index and logical vectors:
+<<eval=FALSE, keep.source=TRUE>>=
+view(sdfset[c("650001", "650012")])
+view(sdfset[4:1])
+mylog <- cid(sdfset) %in% c("650001", "650012")
+view(sdfset[mylog])
+@
+
+\noindent Accessing \Rclass{SDF/SDFset} components: header, atom, bond and data blocks
+<<eval=FALSE, keep.source=TRUE>>=
+atomblock(sdf); sdf[[2]]; sdf[["atomblock"]] 
+   # All three methods return the same component
+header(sdfset[1:4])
+atomblock(sdfset[1:4])
+bondblock(sdfset[1:4])
+datablock(sdfset[1:4])
+header(sdfset[[1]])
+atomblock(sdfset[[1]])
+bondblock(sdfset[[1]])
+datablock(sdfset[[1]])
+@
+
+\noindent Replacement Methods:
+<<eval=FALSE, keep.source=TRUE>>=
+sdfset[[1]][[2]][1,1] <- 999
+atomblock(sdfset)[1] <- atomblock(sdfset)[2]
+datablock(sdfset)[1] <- datablock(sdfset)[2]
+@
+
+\noindent Assign matrix data to data block:
+<<eval=FALSE, keep.source=TRUE>>=
+datablock(sdfset) <- as.matrix(iris[1:100,])
+view(sdfset[1:4])
+@
+
+\noindent Class coercions from \Rclass{SDFstr} to \Rclass{list}, \Rclass{SDF} and \Rclass{SDFset}:
+<<eval=FALSE, keep.source=TRUE>>=
+as(sdfstr[1:2], "list") 
+as(sdfstr[[1]], "SDF")
+as(sdfstr[1:2], "SDFset")
+@
+
+\noindent Class coercions from \Rclass{SDF} to \Rclass{SDFstr}, \Rclass{SDFset}, list with SDF sub-components:
+<<eval=FALSE, keep.source=TRUE>>=
+sdfcomplist <- as(sdf, "list")
+sdfcomplist <- as(sdfset[1:4], "list"); as(sdfcomplist[[1]], "SDF")
+sdflist <- as(sdfset[1:4], "SDF"); as(sdflist, "SDFset")
+as(sdfset[[1]], "SDFstr")
+as(sdfset[[1]], "SDFset")
+@
+
+\noindent Class coercions from \Rclass{SDFset} to lists with components consisting of SDF or sub-components:
+<<eval=FALSE, keep.source=TRUE>>=
+as(sdfset[1:4], "SDF")
+as(sdfset[1:4], "list")
+as(sdfset[1:4], "SDFstr")
+@
+
+\section{Molecular Property Functions}
+\markboth{Molecular Property Functions}{} % Only required to print section title in header field without numbering. 
+\noindent Several methods and functions are available to compute basic compound descriptors, such as molecular formula (MF), molecular weigth (MW) and atom frequencies. 
+<<boxplot, eval=FALSE, fig=TRUE, keep.source=TRUE>>=
+propma <- atomcountMA(sdfset)
+boxplot(propma, col="blue", main="Atom Frequency")
+@
+
+<<eval=FALSE, keep.source=TRUE>>=
+boxplot(rowSums(propma), main="All Atom Frequency")   
+@
+
+\noindent Compute MW and formula:
+<<eval=FALSE, keep.source=TRUE>>=
+MW(sdfset[1:4]); MF(sdfset[1:4])
+propma <- data.frame(MF=MF(sdfset), MW=MW(sdfset), atomcountMA(sdfset)); propma[1:4,]
+datablock(sdfset) <- propma # Works with all SDF components
+test <- apply(propma[1:4,], 1, function(x) data.frame(col=colnames(propma), value=x))
+sdf.visualize(sdfset[1:4], extra = test)
+@
+
+\noindent The following shows an example for asssigning the values stored in a matrix (\textit{e.g.} property descriptors) to the data block components in an \Rclass{SDFset}. Each matrix row will be assigned to the corresponding slot position in the \Rclass{SDFset}.
+<<eval=TRUE, keep.source=TRUE>>=
+datablock(sdfset) <- propma
+datablock(sdfset)[1:4]
+@
+
+\noindent The data blocks in SDFs contain often important annotation information about compounds. The \Rfunction{datablock2ma} function returns this information as matrix for all compounds stored in an \Rclass{SDFset} container. The \Rfunction{splitNumChar} function can then be used to organize all numeric columns in a \Rclass{numeric matrix} and the character columns in a \Rclass{character matrix} as components of a \Rclass{list} object.
+<<eval=FALSE, keep.source=TRUE>>=
+datablocktag(sdfset, tag="PUBCHEM_NIST_INCHI")
+datablocktag(sdfset, tag="PUBCHEM_OPENEYE_CAN_SMILES")
+@
+
+\noindent Convert entire data block to matrix:
+<<eval=FALSE, keep.source=TRUE>>=
+blockmatrix <- datablock2ma(datablocklist=datablock(sdfset)) 
+   # Converts data block to matrix 
+numchar <- splitNumChar(blockmatrix=blockmatrix) 
+   # Splits matrix to numeric matrix and character matrix
+numchar[[1]][1:4,]; numchar[[2]][1:4,] 
+   # Splits matrix to numeric matrix and character matrix
+.
+@
+
+\section{Rendering Chemical Structure Images}
+\markboth{Rendering Chemical Structure Images}{} % Only required to print section title in header field without numbering. 
+\subsection{R Graphics Device}
+A new plotting function for compound structures has been added to the package recently. This function uses the native R graphics device for generating compound depictions. At this point this function is still in an experimental developmental stage but should become stable soon.  \\
+
+\noindent Plot Compound Structures with R's graphics device
+<<plotstruct2, eval=TRUE, fig=TRUE, keep.source=TRUE>>=
+data(sdfsample); sdfset <- sdfsample
+plot(sdfset[1:4], print=FALSE) # 'print=TRUE' returns SDF summaries
+@
+
+\noindent Customize plot:
+<<eval=FALSE, keep.source=TRUE>>=
+plot(sdfset[1:4], griddim=c(2,2), print_cid=letters[1:4], print=FALSE, 
+     noHbonds=FALSE)
+@
+
+\subsection{Online with ChemMine Tools}
+Alternatively, one can visualize compound structures with a standard web browser using the online ChemMine Tools service. The service allows to display other information next to the structures using the extra argument of the \Rfunction{sdf.visualize} function. The following examples demonstrate, how one can plot and annotate structures by passing on extra data as vector of character strings, matrices or lists.  \\
+
+\noindent Plot structures using web service ChemMine Tools:
+<<eval=FALSE, keep.source=TRUE>>=
+sdf.visualize(sdfset[1:4])
+@
+\begin{figure}[bthp]
+  \centering
+   \includegraphics[width=\textwidth]{visualizescreenshot.png} 
+   \caption{Visualization webpage created by calling \Rfunction{sdf.visualize}.}
+   \label{fig:visualize}
+\end{figure}
+
+\noindent Add extra annotation as \Rclass{vector}:
+<<eval=FALSE, keep.source=TRUE>>=
+sdf.visualize(sdfset[1:4], extra=month.name[1:4])
+@
+
+\noindent Add extra annotation as \Rclass{matrix}:
+<<eval=FALSE, keep.source=TRUE>>=
+extra <- apply(propma[1:4,], 1, function(x) 
+         data.frame(Property=colnames(propma), Value=x))
+sdf.visualize(sdfset[1:4], extra=extra)
+@
+
+\noindent Add extra annotation as \Rclass{list}:
+<<eval=FALSE, keep.source=TRUE>>=
+sdf.visualize(sdfset[1:4], extra=bondblock(sdfset[1:4]))
+@
+
+
+\section{Similarity Comparisons and Searching}
+\markboth{Similarity Comparisons and Searching}{} % Only required to print section title in header field without numbering. 
+\subsection{AP/APset Classes for Storing Atom Pair Descriptors}
+The function \Rfunction{sdf2ap} computes atom pair descriptors for one or many compounds \citep{carhart1985apm, chen2002psm}. It returns a searchable atom pair database stored in a container of class \Rclass{APset}, which can be used for structural similarity searching and clustering. As similarity measure, the Tanimoto coefficient or related coefficients can be used. An \Rclass{APset} object consists of one or many \Rclass{AP} entries each storing the atom pairs of a single compound. Note: the deprecated \Rfunction{cmp.parse} function is still available which also generates atom pair descriptor databases, but directly from an SD file. Since the latter function is less flexible it may be discontinued in the future. \\
+
+\noindent Generate atom pair descriptor database for searching:
+<<eval=TRUE, keep.source=TRUE>>=
+ap <- sdf2ap(sdfset[[1]]) # For single compound
+ap
+<<eval=FALSE, keep.source=TRUE>>=
+apset <- sdf2ap(sdfset) # For many compounds. 
+<<eval=TRUE, keep.source=TRUE>>=
+view(apset[1:4])
+@
+
+\noindent Return main components of APset objects:
+<<eval=FALSE, keep.source=TRUE>>=
+cid(apset[1:4]) # Compound IDs
+ap(apset[1:4]) # Atom pair descriptors
+db.explain(apset[1]) # Return atom pairs in human readable format
+@
+
+\noindent Coerce APset to other objects:
+<<eval=FALSE, keep.source=TRUE>>=
+apset2descdb(apset) # Returns old list-style AP database
+tmp <- as(apset, "list") # Returns list
+as(tmp, "APset") # Converts list back to APset
+@
+
+\subsection{Large SDF and Atom Pair Databases}
+When working with large data sets it is often desirable to save the \Rclass{SDFset} and \Rclass{APset} containers as binary R objects to files for later use. This way they can be loaded very quickly into a new R session without recreating them every time from scratch. \\ 
+
+\noindent Save and load of \Rclass{SDFset} and \Rclass{APset} containers:
+<<eval=FALSE, keep.source=TRUE>>=
+save(sdfset, file = "sdfset.rda", compress = TRUE)
+load("sdfset.rda")
+save(apset, file = "apset.rda", compress = TRUE)
+load("apset.rda")
+@
+
+\subsection{Pairwise Compound Comparisons}
+\noindent The \Rfunction{cmp.similarity} function computes the atom pair similarity between two compounds using the Tanimoto coefficient as similarity measure. 
+<<eval=TRUE, keep.source=TRUE>>=
+cmp.similarity(apset[1], apset[2])
+cmp.similarity(apset[1], apset[1])
+@
+
+\subsection{Similarity Searching}
+The \Rfunction{cmp.search} function searches an atom pair database for compounds that are similar to a query compound. The following example returns a data frame where the rows are sorted by the Tanimoto similarity score (best to worst). The first column contains the indices of the matching compounds in the database. The argument cutoff can be a similarity cutoff, meaning only compounds with a similarity value larger than this cutoff will be returned; or it can be an integer value restricting how many compounds will be returned. When supplying a cutoff of 0, the function will return the similarity values for every compound in the database.
+<<eval=TRUE, keep.source=TRUE>>=
+cmp.search(apset, apset[1], type=3, cutoff = 0.3, quiet=TRUE) 
+@
+Alternatively, the function can return the matches in form of an index or a named vector if the \Rfunarg{type} argument is set to \Rfunarg{1} or \Rfunarg{2}, respectively. 
+<<eval=TRUE, keep.source=TRUE>>=
+cmp.search(apset, apset[1], type=1, cutoff = 0.3, quiet=TRUE) 
+cmp.search(apset, apset[1], type=2, cutoff = 0.3, quiet=TRUE) 
+@
+
+\subsection{Visualize Similarity Search Results}
+The \Rfunction{cmp.search} function allows to visualize the chemical structures for the search results. Similar but more flexible chemical structure rendering functions are \Rfunction{plot} and \Rfunction{sdf.visualize} described above. By setting the visualize argument in \Rfunction{cmp.search} to \Rfunarg{TRUE}, the matching compounds and their scores can be visualized with a standard web browser. Depending on the \Rfunarg{visualize.browse} argument, an URL will be printed or a webpage will be opened showing the structures of the matching compounds along with their scores.\\ 
+
+\noindent View similarity search results in R's graphics device:
+<<search_result, eval=TRUE, fig=TRUE, keep.source=TRUE>>=
+cid(sdfset) <- cid(apset) # Assure compound name consistency among objects.
+plot(sdfset[names(cmp.search(apset, apset[6], type=2, cutoff=4, quiet=TRUE))], 
+     print=FALSE)
+@
+
+\noindent View results online with Chemmine Tools:
+<<eval=FALSE, keep.source=TRUE>>=
+similarities <- cmp.search(apset, apset[1], type=3, cutoff = 10)
+sdf.visualize(sdfset[similarities[,1]], extra=similarities[,3])
+@
+
+\section{Clustering}
+\markboth{Clustering}{} % Only required to print section title in header field without numbering. 
+\subsection{Clustering Identical or Very Similar Compounds}
+Often it is of interest to identify very similar or identical compounds in a
+compound set. The \Rfunction{cmp.duplicated} function can be used to quickly
+identify very similar compounds in compound sets, which will be frequently, but
+not necessarily, identical compounds.\\ 
+
+\noindent Identify compounds with identical AP sets:
+<<eval=TRUE, keep.source=TRUE>>=
+cmp.duplicated(apset, type=1)[1:4] # Returns AP duplicates as logical vector
+cmp.duplicated(apset, type=2)[1:4,] # Returns AP duplicates as data frame
+@
+
+\noindent Remove AP duplicates from SDFset and APset objects:
+<<eval=TRUE, keep.source=TRUE>>=
+apdups <- cmp.duplicated(apset, type=1)
+sdfset[which(!apdups)]; apset[which(!apdups)]
+@
+
+\noindent Alternatively, one can identify duplicates via other descriptor types if they
+are provided in the data block of an imported SD file. For instance, one can
+use here fingerprints, InChI, SMILES or other molecular representations. The following 
+examples show how to enumerate by identical InChI strings, SMILES strings and molecular 
+formula, respectively.
+
+<<eval=TRUE, keep.source=TRUE>>=
+count <- table(datablocktag(sdfset, tag="PUBCHEM_NIST_INCHI"))
+count <- table(datablocktag(sdfset, tag="PUBCHEM_OPENEYE_CAN_SMILES"))
+count <- table(datablocktag(sdfset, tag="PUBCHEM_MOLECULAR_FORMULA"))
+count[1:4]
+@
+
+\subsection{Binning Clustering} 
+Compound libraries can be clustered into discrete similarity groups with the
+binning clustering function \Rfunction{cmp.cluster}. The function requires as input a
+descriptor database as well as a similarity threshold. The binning clustering
+result is returned in form of a data frame. Single linkage is used for cluster
+joining. The function calculates the required compound-to-compound distance
+information on the fly, while a memory-intensive distance matrix is only
+created upon user request via the \Rfunarg{save.distances} argument (see below).
+
+Because an optimum similarity threshold is often not known, the \Rfunction{cmp.cluster}
+function can calculate cluster results for multiple cutoffs in one step with
+almost the same speed as for a single cutoff. This can be achieved by providing
+several cutoffs under the cutoff argument. The clustering results for the
+different cutoffs will be stored in one data frame. 
+
+One may force the \Rfunction{cmp.cluster} function to calculate and store the distance
+matrix by supplying a file name to the \Rfunarg{save.distances} argument. The generated
+distance matrix can be loaded and passed on to many other clustering methods
+available in R, such as the hierarchical clustering function \Rfunction{hclust} (see
+below).  
+
+If a distance matrix is available, it may also be supplied to \Rfunction{cmp.cluster} via
+the \Rfunarg{use.distances} argument. This is useful when one has a pre-computed distance
+matrix either from a previous call to \Rfunction{cmp.cluster} or from other distance
+calculation subroutines.  \\ 
+
+\noindent Single-linkage binning clustering with one or multiple cutoffs:
+<<eval=TRUE, keep.source=TRUE>>=
+clusters <- cmp.cluster(db=apset, cutoff = c(0.65, 0.5, 0.4), quiet = TRUE)
+clusters[1:4,]
+@
+
+\noindent Return cluster size distributions for each cutoff:
+<<eval=TRUE, keep.source=TRUE>>=
+cluster.sizestat(clusters, cluster.result=1)
+cluster.sizestat(clusters, cluster.result=2)
+cluster.sizestat(clusters, cluster.result=3)
+@
+
+\noindent Enforce calculation of distance matrix:
+<<eval=FALSE, keep.source=TRUE>>=
+clusters <- cmp.cluster(db=apset, cutoff = c(0.65, 0.5, 0.3), 
+                        save.distances="distmat.rda") 
+   # Saves distance matrix to file "distmat.rda" in current working directory.
+load("distmat.rda") # Loads distance matrix.
+@
+
+\subsection{Multi-Dimensional Scaling (MDS)}
+To visualize and compare clustering results, the \Rfunction{cluster.visualize} function can
+be used. The function performs Multi-Dimensional Scaling (MDS) and visualizes
+the results in form of a scatter plot. It requires as input an \Rclass{APset}, a
+clustering result from \Rfunction{cmp.cluster}, and a cutoff for the minimum cluster size
+to consider in the plot. To help determining a proper cutoff size, the
+\Rfunction{cluster.sizestat} function is provided to generate cluster size statistics.
+
+\noindent MDS clustering and scatter plot:
+<<eval=FALSE, keep.source=TRUE>>=
+cluster.visualize(apset, clusters, size.cutoff=2, quiet = TRUE) 
+   # Color codes clusters with at least two members.
+cluster.visualize(apset, clusters, quiet = TRUE) # Plots all items.
+@
+
+\noindent Create a 3D scatter plot of MDS result:
+<<mds_scatter, eval=TRUE, fig=TRUE, keep.source=TRUE>>=
+library(scatterplot3d)
+coord <- cluster.visualize(apset, clusters, size.cutoff=1, dimensions=3, quiet=TRUE)
+scatterplot3d(coord)
+@
+
+\noindent Interactive 3D scatter plot with Open GL (graphics not evaluated here):
+<<eval=FALSE, keep.source=TRUE>>=
+library(rgl)
+rgl.open(); offset <- 50; par3d(windowRect=c(offset, offset, 640+offset, 640+offset))
+rm(offset); rgl.clear(); rgl.viewpoint(theta=45, phi=30, fov=60, zoom=1)
+spheres3d(coord[,1], coord[,2], coord[,3], radius=0.03, color=coord[,4], alpha=1, 
+shininess=20); aspect3d(1, 1, 1)
+axes3d(col='black'); title3d("", "", "", "", "", col='black'); bg3d("white") 
+   # To save a snapshot of the graph, one can use the command rgl.snapshot("test.png").
+@
+
+\subsection{Clustering with Other Algorithms}
+\Rpackage{ChemmineR} allows the user to take advantage of the wide spectrum of
+clustering utilities available in R. An example on how to perform hierarchical
+clustering with the hclust function is given below. \\ 
+
+\noindent Create atom pair distance matrix:
+<<mds_scatter, eval=TRUE, keep.source=TRUE>>=
+dummy <- cmp.cluster(db=apset, cutoff=0, save.distances="distmat.rda", quiet=TRUE)
+load("distmat.rda")
+@
+
+\noindent Hierarchical clustering with \Rfunction{hclust}
+<<hclust, eval=TRUE, fig=TRUE, keep.source=TRUE>>=
+hc <- hclust(as.dist(distmat), method="single")
+hc[["labels"]] <- cid(apset) # Assign correct item labels
+plot(as.dendrogram(hc), edgePar=list(col=4, lwd=2), horiz=T) 
+@
+
+\section{Version Information}
+\markboth{Version Information}{} % Only required to print section title in header field without numbering. 
+<<sessionInfo, eval=TRUE, keep.source=TRUE>>=
+sessionInfo()
+@
+
+
+%<<>>=
+%library(ChemmineR)
+%db <- cmp.parse("http://bioweb.ucr.edu/ChemMineV2/static/example_db.sdf", quiet=TRUE)
+%@
+%The database can be saved as an R-specific binary file for faster loading in the future. 
+%<<eval=FALSE>>=
+%save(db, file="compounddb.rda", compress=TRUE)
+%@
+%The \Rfunction{load} function loads the database back into R without repeating the time-consuming descriptor generation step. 
+%<<eval=FALSE>>=
+%load("compounddb.rda")
+%@
+
+%\section*{Single Compound Import from SDF}
+
+
+% The \Rfunction{cmp.parse1} function will parse an SDF for a single compound. Similarly as before, the only argument required is the path (or URL) to the SDF.  
+%<<>>=
+%query.url <- "http://bioweb.ucr.edu/ChemMineV2/compound/Aurora/b32:NNQS2MBRHAZTI===/sdf"
+%query <- cmp.parse1(query.url)
+%@
+
+
+% \section*{Descriptor Database Content}
+% 
+% The descriptors of compounds are stored as numeric vectors in a list object along with available annotation information about the database. You may skip this section if you are not interested in internals of descriptor database.
+% 
+% 
+% The \Rfunction{cmp.parse1} function parses the SDF of a single compound, generates the descriptors and stores them in a numeric vector. Each entry of the vector is a descriptor for this compound.
+% 
+% %<<>>=
+% %class(query)
+% %@
+% 
+% In contrast to this, the \Rfunction{cmp.parse} function generates a list object with four components.
+% %<<>>=
+% %names(db)
+% %@
+% 
+% The \Robject{descdb} component is a list. Each entry of the list is a vector
+% of descriptors of one compound.
+% %<<>>=
+% %class(db$descdb)
+% %class(db$descdb[[1]])
+% %@
+% 
+% The \Rfunction{db.explain} function returns the descriptors in a human readable format. A single descriptor can be returned like this:
+% %<<>>=
+% %db.explain(query[1])
+% %db.explain(db$descdb[[1]][1])
+% %@
+% The same is possible for multiple descriptors at once.
+% %<<>>=
+% %db.explain(db$descdb[[1]][1:5])
+% %@
+% %
+% \section*{Removing Duplicated Compounds}
+% 
+% The \Rfunction{cmp.duplicated}
+% function can be used to quickly identify and remove duplicated compounds in imported compound databases. It takes a descriptor database as the only required argument and returns the duplication information as a logical vector.
+% 
+% To demo this feature on the imported sample data set, one can create a duplication with the following command.
+% %<<>>=
+% %db$descdb <- c(db$descdb, list(db$descdb[[1]])) 
+% %@
+% In the next step the duplication is identified with the \Rfunction{cmp.duplicated} function. 
+% %<<>>=
+% %dup <- cmp.duplicated(db)
+% %dup
+% %@
+% The \texttt{TRUE} entry in the returned logical vector indicates the duplication. It can be easily removed with the standard R subsetting syntax.
+% %<<>>=
+% %db$descdb <- db$descdb[!dup]
+% %@
+% In a real example one also needs to remove the duplications from the other database components.
+% %<<eval=FALSE>>=
+% %db$cids <- db$cids[!dup]
+% %db$sdfsegs <- db$sdfsegs[!dup]
+% %@
+% 
+% \section*{Pairwise Compound Comparisons}
+% The \Rfunction{cmp.similarity} computes the atom pair similarity between two compounds using the Tanimoto coefficient as similarity measure.
+% 
+% %<<>>=
+% %similarity <- cmp.similarity(db$descdb[[1]], db$descdb[[2]])
+% %cat(paste("The similarity between compound 1 and 2 is ", similarity, "\n", sep=""))
+% %similarity <- cmp.similarity(db$descdb[[1]], query)
+% %cat(paste("The similarity between compound 1 and the query is ", similarity, "\n", sep=""))
+% %@
+% 
+% With the \Rfunction{cmp.similarity} function one can easily design custom search subroutines similar to the one introduced in the next section.
+% 
+% \section*{Similarity Searching}
+% The \Rfunction{cmp.search} function searches an atom pair database for compounds that are similar to a query compound.
+% 
+% %<<>>=
+% %cmp.search(db, query, cutoff=0.4, return.score=TRUE, quiet=TRUE)
+% %@
+% 
+% 
+% The function returns a data frame where the rows are sorted by similarity score (best to worst). The first column contains the indices of the matching compounds in the database. The argument \Rfunarg{cutoff} can be a similarity cutoff, meaning only compounds with a similarity value larger than this cutoff will be returned; or it can be an integer value restricting how many compounds will be returned. If the argument \Rfunarg{return.score} is set to \texttt{FALSE}, then the function will return a vector of indices rather than a data frame. When supplying a cutoff of 0, the function will return the similarity values for every compound in the database.
+% 
+% %<<eval=FALSE>>=
+% %similarities <- cmp.search(db, db[[1]][[1]], cutoff =0, return.score=TRUE, quiet=TRUE) 
+% %@
+% 
+% The \Rfunction{cmp.search} function allows to visualize the chemical structure images for the search results. A similar but more flexible chemical structure rendering function (\Rfunction{sdf.visualize}) is described later in this manual. By setting the \Rfunarg{visualize} argument in \Rfunction{cmp.search} to \texttt{TRUE}, the matching compounds and their scores can be visualized with a standard web browser on the online ChemMine interface. Depending on the \Rfunarg{visualize.browse} argument, an URL will be printed or a webpage will be opened showing the structures of the matching compounds along with their scores.
+% %<<eval=FALSE>>=
+% %similarities <- cmp.search(db, query, cutoff=10, quiet=TRUE, visualize=TRUE, visualize.browse=FALSE) 
+% %@
+% Setting the \texttt{visualize.browse} argument to \texttt{TRUE} will automatically open the webpage in the default browser. 
+% 
+% The query structure can also be displayed on the visualization webpage by supplying the SDF of the query in a character string or providing its file name or URL. For example,
+% %<<eval=FALSE>>=
+% %similarities <- cmp.search(db, query, cutoff=10, quiet=TRUE, visualize=TRUE, visualize.browse=TRUE, visualize.query=query.url) 
+% %@
+% This will read the SDF provided by \texttt{query.url}, and display it as a ``reference compound'' at the top of the page. Part of the screenshot of the resulting output is shown in Fig. \ref{fig:search}. A live demo is also available and linked from the online version of this manual (\url{http://bioweb.ucr.edu/ChemMineV2/chemminer/tutorial}).
+% 
+% \begin{figure}[bthp]
+%   \centering
+%    \includegraphics[width=\textwidth]{searchscreenshot.pdf} 
+%    \caption{\Rfunction{cmp.search} can automatically upload the structures and scores of matching compounds to ChemMine for visualization.}
+%    \label{fig:search}
+% \end{figure}
+% 
+% 
+% Any information uploaded to \textit{ChemMine} by \Rpackage{ChemmineR} is kept private and secure using a highly randomized URL. The visualization pages can be shared with colleagues by providing the corresponding URLs.
+% 
+% \section*{Rendering Chemical Structure Images}
+% Internally, the similarity search function uses the \Rfunarg{sdf.visualize} function to send compounds to ChemMine for structure visualization. The same function can be used to send any custom combination of compounds for visualization on ChemMine along with complex annotation and activity information. The function accepts a database and a vector of compound indices. The following example performs first a similarity search to obtain a vector of indices.
+% 
+% %<<>>=
+% %indices <- cmp.search(db, query, cutoff=10, quiet=TRUE)
+% %@
+% %<<eval=FALSE>>=
+% %url <- sdf.visualize(db, indices, browse=TRUE, quiet=TRUE)
+% %@
+% %<<echo=FALSE>>=
+% %url <- sdf.visualize(db, indices, browse=FALSE, quiet=TRUE)
+% %@
+% %<<>>=
+% %url
+% %@
+% The URL stored in the \Robject{url} object points to a webpage that shows the structures of the compounds. If the \Rfunarg{browse} argument is set to \texttt{TRUE}, then the default browser will open automatically.
+% 
+% In addition, one can display other information next to the structures using the \Rfunarg{extra} argument. In the following example, a vector of character strings is assigned to \Rfunarg{extra}, and its entries are displayed next to corresponding chemical structures.
+% %<<>>=
+% %extra.info <- paste("Matching compound #", 1:length(indices), sep="")
+% %names(extra.info) <- rep("Note", length(indices))
+% %@
+% %<<eval=FALSE>>=
+% %url <- sdf.visualize(db, indices, browse=TRUE, quiet=TRUE, extra=extra.info)
+% %@
+% %<<echo=FALSE>>=
+% %url <- sdf.visualize(db, indices, browse=FALSE, quiet=TRUE, extra=extra.info)
+% %<<>>=
+% %url
+% %@
+% 
+% The function also allows to list a reference compound at the top of the page. The user supplies the SDF of this reference compound in form of a character string or a file. Annotation information can also be displayed next to the reference structure. 
+% 
+% %<<eval=FALSE>>=
+% %url <- sdf.visualize(db, indices, browse=TRUE, quiet=TRUE, reference.sdf=query.url, reference.note="Reference Compound from Aurora Library")
+% %@
+% %<<echo=FALSE>>=
+% %url <- sdf.visualize(db, indices, browse=FALSE, quiet=TRUE, reference.sdf=query.url, reference.note="Reference Compound from Aurora Library")
+% %@
+% %<<>>=
+% %url
+% %@
+% 
+% It is also possible to display more complex tabular data next to each compound by providing a list of data frames. To demonstrate this utility, the following example creates such a list of data frames via a similarity search. Each data frame is then displayed next to the corresponding compound. The screenshot of the resulting output is shown in Fig. \ref{fig:visualize}.
+% \begin{figure}[bthp]
+%   \centering
+%    \includegraphics[width=\textwidth]{visualizescreenshot.pdf} 
+%    \caption{Visualization webpage created by calling \Rfunction{sdf.visualize}. This page shows the table information properly rendered and displayed next to the compound structures.}
+%    \label{fig:visualize}
+% \end{figure}
+% 
+% To generate this output, first a similarity is performed using a cutoff of 0 to obtain the similarity values between the query compound and each of the compounds in the database. 
+% %<<>>=
+% %search.results <- cmp.search(db, query, cutoff=0, return.score=T, quiet=T)
+% %@
+% 
+% The resulting data frame will be used as annotation table for the query compound. To provide a table name, one has to embed it into a list. If a table name is not required, then there is no need to generate the list object
+% %<<>>=
+% %note.q <- list(search.results)
+% %names(note.q) <- "Similarities With All"
+% %@
+% 
+% For each of the top 10 hits in the search result, we perform the same search to obtain the similarity values between the hit and all compounds in the database. This information will then be displayed next to the structures on the visualization page. 
+% %<<>>=
+% %indices <- search.results[1:10,1]
+% %notes <- list()
+% %for (i in indices) {
+% %  search.results <- cmp.search(db, db$descdb[[i]], 0, return.score=T, quiet=T)
+% %  notes <- c(notes, list(search.results))
+% %}
+% %names(notes) <- rep("Similarities With All", 10)
+% %@
+% The following step displays the complex sample data set on ChemMine.
+% %<<eval=FALSE>>=
+% %url <- sdf.visualize(db, indices, extra=notes, browse=T, reference.sdf=query.url, reference.note=note.q)
+% %@
+% 
+% Note: the \Rfunction{sdf.visualize} function depends on the original SDF file from which the descriptor database has been generated. If the SDF file has been moved or altered then this step cannot be used.
+% 
+% Any information uploaded to \textit{ChemMine} by \Rpackage{ChemmineR} is kept private and secure using a highly randomized URL. The visualization pages can be shared with colleagues by providing the corresponding URLs.
+% 
+% 
+% \section*{Subsetting SDF Batch Files}
+% After identifying a subset of interesting compounds, one can generate an SDF for this subset of compounds using the \Rfunction{sdf.subset} function.
+% 
+% 
+% For example, one can perform a similarity search, and use the top 10 results for subsetting.
+% %<<>>=
+% %indices <- cmp.search(db, query, cutoff=10, quiet=TRUE)
+% %@
+% With the corresponding indices one can generate a custom SDF batch data set and store it in an external file. 
+% %<<>>>=
+% %sdf <- sdf.subset(db, indices)
+% %cat(sdf, file="matching.sdf")
+% %@
+% 
+% One may also create a sub-database from a descriptor database using the  related \Rfunction{db.subset} function.
+% %<<>>>=
+% %db_sub <- db.subset(db, indices)
+% %@
+% 
+% Note: the \Rfunction{sdf.visualize} function depends on the original SDF file from which the descriptor database has been generated.
+% 
+% 
+% \section*{Binning Clustering}
+% 
+% Compound libraries can be clustered into discrete similarity groups with the binning clustering function \Rfunction{cmp.cluster}. The function requires as input a descriptor database as well as a similarity threshold. The binning clustering result is returned in form of a data frame. Single linkage is used for cluster joining. The function calculates the required compound-to-compound distance information on the fly, while a memory-intensive distance matrix is only created upon user request via the \Rfunarg{save.distances} argument (see below).
+% 
+% %<<>>=
+% %clusters <- cmp.cluster(db, cutoff=0.65, quiet=TRUE)
+% %@
+% The previous step clusters the compounds stored in \Rfunarg{db} with a similarity cutoff of 0.65. In other words, if two compounds share a similarity of 0.65 or above, then they will be joined into the same cluster. The first 10 rows of the result data frame are shown here:
+% 
+% %<<>>=
+% %clusters[1:10,]
+% %@
+% The first column contains the compound IDs, the second the cluster size and third the cluster ID. The compound in cluster ID 1 can be returned with the following command: 
+% %<<>>=
+% %clusters[clusters[,3]==1,]
+% %@
+% Similarly as above, one can visualize the chemical structures for a compound cluster of interest with the \Rfunction{sdf.visualize} function.  
+% %<<eval=FALSE>>=
+% %ids <- clusters[clusters[,3]==23, 1]
+% %sdf.visualize(db, ids, browse=TRUE, quiet=TRUE)
+% %@
+% 
+% \section*{Binning Clustering with Multiple Cutoffs}
+% Because an optimum similarity threshold is often not known, the
+% \Rfunction{cmp.cluster} function can calculate cluster results for multiple cutoffs  in one step with almost the same speed as for a single cutoff. The clustering results for the different cutoffs will be stored in one data frame.
+% %<<>>=
+% %clusters <- cmp.cluster(db, cutoff=c(0.65, 0.5), quiet=TRUE)
+% %@
+% %The first 10 rows of the generated cluster result data frame are:
+% %<<>>=
+% %clusters[1:10,]
+% %@
+% %Cluster 14 obtained by the cutoff 0.65 contains the following compounds: 
+% %<<>>=
+% %clusters[clusters[, "CLID_0.65"]==14,]
+% %@
+% %and cluster 14 from cutoff 0.5 contains:
+% %<<>>=
+% %clusters[clusters[, "CLID_0.5"]==14,]
+% %@
+% 
+% 
+% One may force the \Rfunction{cmp.cluster} function to calculate and store the distance matrix by supplying a file name to the \Rfunarg{save.distances} argument. The generated distance matrix can be loaded and passed on to many other clustering methods available in R, such as the hierarchical clustering function \Rfunction{hclust} (see below).
+% 
+% If a distance matrix is available, it may also be supplied to \Rfunction{cmp.cluster} via the \Rfunarg{use.distances} argument. This is useful when one has a pre-computed distance matrix either from a previous call to \Rfunction{cmp.cluster} or from other distance calculation subroutines. 
+% 
+% \section*{Multi-Dimensional Scaling (MDS)}
+% 
+% To visualize and compare clustering results, the \Rfunction{cluster.visualize} function can be used. The function performs Multi-Dimensional Scaling (MDS) and visualizes the results in form of a scatter plot. It requires as input a descriptor database, a clustering result from \Rfunction{cmp.cluster}, and a cutoff for the minimum cluster size to consider in the plot.  To help determining a proper cutoff size, the \Rfunction{cluster.sizestat} function is provided to generate cluster size statistics.
+% 
+% The following example uses the clustering result obtained above using cutoff values 0.65 and 0.5. By default, the \Rfunction{cluster.sizestat} uses the first cutoff value:
+% 
+% %<<>>=
+% %cluster.sizestat(clusters)
+% %@
+% 
+% Based on this size statistics, clusters of size 3 or larger will be included in the following MDS visualization step.
+% 
+% %<<fig=TRUE>>=
+% %coord <- cluster.visualize(db, clusters, 3, quiet=TRUE)
+% %@
+% 
+% By default \Rfunction{cluster.visualize} will draw the scatter plot in the  R plotting device, and the user can interactively click a point to retrieve more information on the corresponding compounds. In the non-interactive mode (\Rfunarg{non.interactive}), it will save the plot to a specified file in EPS or PDF format.
+% 
+% A 3D MDS plot can be created with the following sequence of commands.
+% 
+% %<<eval=FALSE>>=
+% %coord <- cluster.visualize(db, clusters, 3, dimensions=3, quiet=TRUE)
+% %library(scatterplot3d)
+% %scatterplot3d(coord)
+% %@
+% %<<fig=TRUE,echo=FALSE>>
+% %coord <- cluster.visualize(db, clusters, 3, dimensions=3, quiet=TRUE)
+% %if(suppressWarnings(require(require(scatterplot3d)))) scatterplot3d(coord)
+% %@
+% %
+% %The data returned by the \Rfunction{cluster.visualize} can also be inspected with the fully interactive \Rpackage{rggobi} data visulalization system. The GGobi software and its dependencies can be obtained from the GGobi project site (\url{http://www.ggobi.org/rggobi}). The following commands demonstrate the import of the generated MDS data set into \Rpackage{rggobi}.
+% %<<eval=FALSE>>=
+% %library(rggobi)
+% %ggobi(coord)
+% %@
+% 
+% 
+% \section*{Clustering with Other Packages}
+% 
+% \Rpackage{ChemmineR} allows the user to take advantage of the wide spectrum of clustering utilities available in R. An example on how to perform hierarchical clustering with the \Rfunction{hclust} function is given below.
+% %<<>>=
+% %dummy <- cmp.cluster(db, 0, save.distances="distmat.rda", quiet=T)
+% %@
+% The \Rfunction{cmp.cluster} function is used with the \Rfunarg{save.distances="distmat.rda"} argument to generate a distance matrix. The matrix is saved to a file named \texttt{'distmat.rda'} and it needs to be loaded into R with the \Rfunction{load} function. This matrix can be directly passed on to \Rfunction{hclust}.
+% %<<fig=TRUE>>=
+% %load('distmat.rda')
+% %hc <- hclust(as.dist(distmat), "single")
+% %plot(as.dendrogram(hc), horiz=T)
+% %@
+% 
+% \section*{Format Interconversions between SMILES and SDF}
+% This option will be provided in the future. At this point, SMILES strings can be imported into ChemmineR only indirectly by converting them into SDFs via ChemMine's online WorkBench (\url{http://bioweb.ucr.edu/ChemMineV2/work/smiles/}).
+% 
+% \section*{Calculation of Physicochemical Descriptors}
+% Several functions will be available in the near future for calculating physicochemical descriptors directly in ChemmineR. Currently, users can calculate 40 common physicochemical descriptors with the online descriptor prediction tool available on ChemMine's WorkBench (\url{http://bioweb.ucr.edu/ChemMineV2/work/sdf/}).
+
+\section*{} % Dummy section to fix "References" link in the table-of-contents list
+\bibliography{bibtex}
+\addcontentsline{toc}{section}{References} % Includes the entry "References" in the table-of-contents list 
+\end{document}
