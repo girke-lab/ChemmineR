@@ -1,7 +1,18 @@
-# options
-if (is.null(getOption('chemminer.max.upload')))
-    options(chemminer.max.upload = 100)
-    
+.onLoad <- function(libname, pkgname) 
+{
+#pp#    if (!is.null(getOption('disable.chemminer.performance.pack'))
+#pp#            && getOption('disable.chemminer.performance.pack') == 1) {
+#pp#        cat("ChemmineR Performance Pack is explicitly disabled.\n")
+#pp#        options(.use.chemminer.pp = 0)
+#pp#    } else if (suppressWarnings(require('ChemmineRpp', quietly=T))) {
+#pp#        cat("Using ChemmineR Performance Pack for calculation.",
+#pp#        "Set `disable.chemminer.performance.pack' option to 1",
+#pp#        "to disable the use of ChemmineR Performance Pack.\n")
+#pp#        options(.use.chemminer.pp = 1)
+#pp#    }
+}
+
+.db.header.size <- 16
 # supported elements
 .elements <- list(
     R=0,
@@ -121,6 +132,7 @@ if (is.null(getOption('chemminer.max.upload')))
 # argument: the filename, which can also be a connection
 # return: the list containing the vector of atoms and the vector of bonds
 # this is an internal function and is not intended to be used by users
+## ThG: function is not used by new S4 class system.
 .parse <- function(file_name, skip=3)
 {
     if ("connection" %in% class(file_name))
@@ -136,8 +148,27 @@ if (is.null(getOption('chemminer.max.upload')))
     num_atoms <- as.integer(substr(line, 1, 3))
     num_bonds <- as.integer(substr(line, 4, 6))
 
+    if (.has.pp()) {
+        buf <- paste(
+            '', '', '',
+            line, 
+            paste(readLines(con=con, n=num_atoms + num_bonds), collapse='\n'),
+            'M END\n$$$$\n',
+            sep="\n")
+        # close connection if it is opend here
+        if (! "connection" %in% class(file_name))
+            close(con)
+        d <- Descriptors()
+        if (Descriptors_parse_sdf(self=d, sdf=buf) == 0) {
+            cat("SDF not well-formatted!")
+            return(list(n_atoms=0, n_bonds=0, desc_obj=NULL))
+        }
+        return(list(n_atoms=num_atoms, n_bonds=num_bonds, desc_obj=d))
+    }
+
     if (length(num_atoms) == 0 || num_atoms == 0)
-        return(list(atoms=vector(), bonds=list(u=vector(), v=vector())))
+        return(list(atoms=vector(), bonds=list(u=vector(), v=vector()),
+            n_atoms=0, n_bonds=0))
 
     # parse atom block
     temp <- readLines(con=con, n=num_atoms)
@@ -161,7 +192,7 @@ if (is.null(getOption('chemminer.max.upload')))
     if (! "connection" %in% class(file_name))
         close(con)
 
-    return(list(atoms=atoms, bonds=bonds))
+    return(list(atoms=atoms, bonds=bonds, n_atoms=num_atoms, n_bonds=num_bonds))
 }
 
 # generates distance matrix for every pair of atoms in compound. Distance is
@@ -242,6 +273,18 @@ if (is.null(getOption('chemminer.max.upload')))
 # this is an internal function and is not intended to be used by users
 .gen_atom_pair <- function(cmp)
 {
+    if (.has.pp() && class(cmp$desc_obj) == "_p_Descriptors") {
+        if (is.null(cmp$desc_obj))
+            return(vector())
+        desc <- c()
+        for (i in 1:Descriptors_get_len(self=cmp$desc_obj)) {
+            desc <- c(desc,
+                    Descriptors_get_descriptor(self=cmp$desc_obj, i=i-1))
+        }
+        if (length(desc) == 0) return(desc)
+        return(.factor_to_vector(as.factor(desc)))
+    }
+
     num_bonds <- length(cmp[['bonds']][['u']])
     if (num_bonds == 0)
         return(c())
@@ -278,16 +321,27 @@ if (is.null(getOption('chemminer.max.upload')))
 # similarity model
 # input: descriptors for two compounds. both are vectors
 # output: similarity
-cmp.similarity <- function(a, b, mode=1, worst=0)
+.cmp.similarity <- function(a, b, mode=1, worst=0,
+    dbcon.a=NULL, db.intsize.a=4,
+    dbcon.b=NULL, db.intsize.b=4)
 {
+    ## ThG: added for compatability with new S4 classes APset/AP
+    if(class(a)=="APset") { a <- ap(a)[[1]] }
+    if(class(b)=="APset") { b <- ap(b)[[1]] }
+    if(class(a)=="AP") { a <- ap(a) }
+    if(class(b)=="AP") { b <- ap(b) }
+    ## ThG: end of lines
     # check argument, make sure they are vectors and not lists
-    if (is.null(a) || is.null(b))
+    if (class(a) == 'character' && length(a) == 3 && a[[1]] == 'filedb:') 
+        a <- .load.file.backed.desc(a, dbcon.a, db.intsize.a)
+    if (class(b) == 'character' && length(b) == 3 && b[[1]] == 'filedb:') 
+        b <- .load.file.backed.desc(b, dbcon.b, db.intsize.b)
+    if (is.null(b) || is.null(a))
         return(0)
-
     if (class(b) != "numeric" || class(a) != "numeric") {
-        stop("Both arguments must be descriptors in the form of vectors.\n",
-    "Did you use \"[]\" instead of \"[[]]\" to index the descriptor ",
-    "database?")
+        stop("Both arguments must be AP/APset objects or descriptors in the form of vectors.\n",
+        "Did you use \"[]\" instead of \"[[]]\" to index the descriptor ",
+        "database?")
     }
 
     if (mode == 1 && worst != 0) {
@@ -315,6 +369,10 @@ cmp.similarity <- function(a, b, mode=1, worst=0)
         return (s^3)
     }
 }
+cmp.similarity <- function(a, b, mode=1, worst=0)
+{
+    .cmp.similarity(a, b, mode=mode, worst=worst)
+}
 
 # generate (atom pair) descriptor from sdf file encoding ONE compound. If the
 # file encodes many compounds, only the first one will be parsed. Use
@@ -323,7 +381,10 @@ cmp.similarity <- function(a, b, mode=1, worst=0)
 sdf_to_desc <- function(filename)
 {
     cmp <- .parse(filename)
-    return (.gen_atom_pair(cmp))
+    desc <- .gen_atom_pair(cmp)
+    if (.has.pp() && class(cmp$desc_obj) == "_p_Descriptors") 
+        delete_Descriptors(self=cmp$desc_obj)
+    desc
 }
 # alias
 cmp.parse1 <- sdf_to_desc
@@ -332,68 +393,66 @@ cmp.parse1 <- sdf_to_desc
 # returns a list of descriptors of compounds. The list contains two names:
 # descdb: the descriptor db, itself being a vector of descriptors.
 # names: the names of compounds as a vector.
-sdfs_to_desc <- function(filename, quiet=FALSE)
+sdfs_to_desc <- function(filename, quiet=FALSE, type="normal", dbname="")
 {
+#pp#    if (type == "file-backed") {
+#pp#        if (! .has.pp())
+#pp#            stop("file-backed parsing is only available with ChemmineR",
+#pp#            " Performance Pack package\n")
+#pp#        if (! suppressWarnings(require('ChemmineRpp', quietly=T))) 
+#pp#            stop('Error: cannot load ChemmineR Performance Pack package\n')
+#pp#        if ("connection" %in% class(filename) ||
+#pp#            length(grep('(ht|f)tp[s]://', filename)))
+#pp#            stop('file-backed parsing can only work with path to a local',
+#pp#                ' file.\n')
+#pp#        if (dbname == "")
+#pp#            stop("file-backed parsing requies `dbname' to be set to an",
+#pp#            " output filename without extension.\n")
+#pp#    }
     # count compounds first
     con <- file(filename, open="r")
     cat("counting number of compounds in sdf...\n")
     n_compounds <- 0
+    sdf_seg <- array()
+    cur_line <- 0
+    sdf_seg[[1]] <- 0
+    read_cid <- TRUE
+    cid_buf <- ''
+    cids <- array()
     while (TRUE) {
         line <- readLines(con, n=1)
-        if (length(line) == 0) {
-            # reaching the last line
-            if (prev_line != "$$$$") {
-                n_compounds <- n_compounds + 1
-                warning("The SDF file does not end with $$$$!")
-            }
+        cur_line <- cur_line + 1
+        if (length(line) == 0)
             break;
-        }
-        if (line == "$$$$")
+        if (line == "$$$$") {
             n_compounds <- n_compounds + 1
-        prev_line <- line
+            sdf_seg[n_compounds + 1] <- cur_line
+            read_cid <- TRUE
+            cids[n_compounds] <- cid_buf
+        } else if (read_cid) {
+            cid_buf <- line
+            read_cid <- FALSE
+        }
     }
     cat(n_compounds, " compounds found\n")
     close(con)
 
     # real parsing
-    con <- file(filename, open="r")
     descdb <- list()
-    cids <- array()
-    sdf_seg <- array()
-    flag <- 1
-    id <- 1
-    cur_line <- 0
-    cmp_start <- cur_line
+    if (type != 'file-backed') {
+        con <- file(filename, open="r")
+        id <- 1
+        cur_line <- 0
 
-    # compound id
-    cid <- readLines(con, n=1)
-    cur_line <- cur_line + 1
-    if (length(cid) == 0) cid <- ""
-
-    while (flag == 1) {
-        # header
-        cmp <- .parse(con, skip=2)
-        cur_line <- cur_line + 2 + length(cmp[["atoms"]]) +
-            length(cmp[["bonds"]]$u) + 1
-        if (length(cmp[["atoms"]]) == 0)
-            flag <- 0
-        else {
-            # skip to the end of cmp entry
-            tmp <- readLines(con, n=1)
-            cur_line <- cur_line + 1
-
-            while (length(tmp) != 0 && tmp != "$$$$") {
-                tmp <- readLines(con, n=1)
-                cur_line <- cur_line + 1
-            }
-        
+        for (id in 1:n_compounds) {
+            # parse
+            cmp <- .parse(con, skip=3)
             # update db
             descdb[[id]] <- .gen_atom_pair(cmp)
-            cids[[id]] <- cid
-            sdf_seg[[id]] <- cmp_start
+            cur_line <- cur_line + 4 + cmp$n_atoms + cmp$n_bonds
             if (! quiet) {
-                cid_p <- substr(cid, 1, 20)
-                if (cid_p == cid) 
+                cid_p <- substr(cids[[id]], 1, 20)
+                if (cid_p == cids[[id]]) 
                     msg <- paste("\r", id, "/", n_compounds, " parsed (", 
                         cid_p, ")",
                         " now at line ", cur_line,
@@ -407,22 +466,40 @@ sdfs_to_desc <- function(filename, quiet=FALSE)
                         sep='')
                 cat(substr(msg, 1, 79))
             }
-            id <- id + 1
-
             # proceed to next compound, which might not exist
-            cmp_start <- cur_line
-            cid <- readLines(con, n=1)
-            cur_line <- cur_line + 1
-            if (length(cid) == 0)
-                flag <- 0
+            temp <- readLines(con, n=sdf_seg[[id + 1]] - cur_line)
+            cur_line <- sdf_seg[[id + 1]]
         }
-
+        cat("\nYou can use save(..., file='...', compress=TRUE)",
+            "to save the database\n")
+        close(con)
+    } else {
+        dbfile <- paste(dbname, '.cdb', sep='')
+        if (batch_parse(filename, dbfile) == 0) {
+            stop('Error in parsing using ChemmineR Performance Pack',
+                ' package. Check your input file.\n')
+        }
+        # indexing binary db
+        dbf <- file(dbfile, 'rb')
+        # skip header
+        seek(dbf, 16)
+        # read int size
+        intsize <- readBin(dbf, integer(), size=1)
+        for (id in 1:n_compounds) {
+            descdb[[id]] <- c("filedb:", dbname, seek(dbf))
+            d_size <- readBin(dbf, integer(), size=intsize)
+            seek(dbf, d_size * intsize, origin='current')
+        }
+        close(dbf)
+        cat("\nYour database has been generated and is backed by file",
+            dbfile, '\n')
+        cat("You can use save(..., file='...', compress=TRUE)", 
+            "to save the database\n")
+        cat("Also make sure", dbfile, "is not deleted or overwritten", 
+            "unless you do not need the database any more.\n")
     }
-    cat(
-    "\nyou can use save(..., file='...', compress=TRUE) to save the database\n"
-    )
-    close(con)
-    return(list(descdb=descdb, cids=cids, sdfsegs=sdf_seg, source=filename))
+    return(list(descdb=descdb, cids=cids, sdfsegs=sdf_seg,
+                source=filename, type=type))
 }
 # alias
 cmp.parse <- sdfs_to_desc
@@ -432,9 +509,30 @@ cmp.parse <- sdfs_to_desc
 # either returned by `cmp.parse1/sdf_to_desc' or a reference to one instance in
 # db such as db$descdb[[123]] two types of cutoff: score cutoff (<=1) or count
 # cutoff (>1)
-cmp.search <- function(db, query, cutoff=0.5, return.score=FALSE, quiet=FALSE,
-        mode=1, visualize=FALSE, visualize.browse=TRUE, visualize.query=NULL)
+cmp.search <- function(db, query, type=1, cutoff=0.5, return.score=FALSE, quiet=FALSE,
+	mode=1, visualize=FALSE, visualize.browse=TRUE, visualize.query=NULL) 
 {
+    ## ThG: added for compatability with new S4 classes APset/AP
+    ## Note: type argument was also added (has no impact on old list object). 
+    dbtype <- as.character(class(db))
+    if(dbtype=="APset") { db <- apset2descdb(db) }
+    if(class(query)=="APset") query <- ap(query[[1]]) 
+    if(class(query)=="AP") query <- ap(query) 
+    ## ThG: end of lines
+    if (.is.file.backed.desc(query))
+        query <- .load.file.backed.desc(query)
+    dbcon <- NULL
+    intsize <- 4
+    if (db$type == 'file-backed') {
+        for (i in 1:length(db$descdb)) {
+            if (.is.file.backed.desc(db$descdb[[i]])) {
+                dbcon <- file(paste(db$descdb[[i]][[2]], '.cdb', sep=''), 'rb')
+                seek(dbcon, 16)
+                intsize <- readBin(dbcon, integer(), n=1, size=1)
+                break
+            }
+        }
+    }
     scores <- array()
     ids <- array()
     pos <- 1    # tail of entries
@@ -445,13 +543,15 @@ cmp.search <- function(db, query, cutoff=0.5, return.score=FALSE, quiet=FALSE,
             steps <- i / perstep
             .progress_bar(paste(min(steps*4, 100), "%", collapse=""))
         }
+        cmp <- db$descdb[[i]]
+        if (db$type == 'file-backed' && .is.file.backed.desc(db$descdb[[i]]))
+            cmp <- .load.file.backed.desc(cmp, dbcon, intsize)
         if (cutoff <= 1)
-            score <- cmp.similarity(db$descdb[[i]], query, mode=mode,
-                worst=cutoff)
+            score <- .cmp.similarity(cmp, query, mode=mode, worst=cutoff)
         else if (pos - 1 < cutoff)
-            score <- cmp.similarity(db$descdb[[i]], query, mode=mode, worst=0)
+            score <- .cmp.similarity(cmp, query, mode=mode, worst=0)
         else
-            score <- cmp.similarity(db$descdb[[i]], query, mode=mode,
+            score <- .cmp.similarity(cmp, query, mode=mode,
                     worst=scores[[pos - 1]])
         if (cutoff <= 1) {
             if (score >= cutoff) {
@@ -477,6 +577,7 @@ cmp.search <- function(db, query, cutoff=0.5, return.score=FALSE, quiet=FALSE,
             ids[[pos_]] <- i
         }
     }
+    if (!is.null(dbcon)) close(dbcon)
     if (!quiet) cat("\n")
     if (cutoff <= 1) {
         order <- sort(scores, index=TRUE)[["ix"]]
@@ -489,36 +590,50 @@ cmp.search <- function(db, query, cutoff=0.5, return.score=FALSE, quiet=FALSE,
         names(notes) <- rep("similarity", length(notes))
         if (is.null(visualize.query))
             url <- sdf.visualize(db, ids[order], extra=notes,
-                browse=visualize.browse)
+                                    browse=visualize.browse)
         else
             url <- sdf.visualize(db, ids[order], reference.sdf=visualize.query,
                 extra=notes, browse=visualize.browse)
         if (!visualize.browse)
             print(url)
     }
-    if (return.score)
+    ## ThG: modified/added for compatability with new S4 classes APset/AP
+    if (return.score & dbtype=="list") {
         return(data.frame(ids=ids[order], scores=scores[order]))
-    else
+     }
+    if (!return.score & dbtype=="list") {
         return(ids[order])
+    }
+    if (dbtype=="APset") {
+	if(type==1) {
+		return(ids[order])
+	}
+	if(type==2) {
+		index <- scores[order]
+		names(index) <- db$cids[ids[order]]
+		return(index)
+	}
+	if(type==3) {
+		return(data.frame(index=ids[order], cid=db$cids[ids[order]], scores=scores[order]))
+	}
+     }
+    ## ThG: end of lines
 }
 
 # view sdfs in ChemMine
 .sdf.visualize.max.files = 100
 sdf.visualize <- function(db, cmps, extra=NULL, reference.sdf=NULL,
-    reference.note=NULL, browse=TRUE, quiet=TRUE)
+reference.note=NULL, browse=TRUE, quiet=TRUE)
 {
-    if (is.null(getOption('chemminer.max.upload')))
-        max.upload = 100
-    else
-        max.upload = getOption('chemminer.max.upload')
-    if (length(cmps) > max.upload)
-        stop(paste('\n\tYou can visualize at most ', 
-            max.upload,
-            ' compounds.\n',
+    ## ThG: added for compatability with new S4 classes APset/AP ##
+    if(class(db)=="SDF") db <- as(db, "SDFset")
+    if(missing(cmps) & class(db)=="SDFset") cmps <- cid(db) # turns cmps into optional argument for SDFset class
+    ## ThG: end of lines ##
+    if (length(cmps) > 100)
+        stop(paste('\n\tYou cannot visualize more than 100 compounds.\n',
             '\tYou supplied ', length(cmps), ' compounds.\n',
-            '\tSending too many compounds will take a long time and much\n',
-            '\tresource on the server, and may also crash your browser.\n',
-            '\tYou can reset the limit by setting the `chemminer.max.upload` option.\n',
+            '\tSending too many compounds will take a long time and too much\n',
+            '\tresources on the server, or it could crash your browser.\n',
             sep=''))
 
     # read the reference file if there is any
@@ -526,15 +641,23 @@ sdf.visualize <- function(db, cmps, extra=NULL, reference.sdf=NULL,
         reference.sdf <- .read.one.sdf(reference.sdf)
 
     if (!is.null(extra) && length(extra) != length(cmps))
-        stop(
-        '\n\tthe indices and the extra information have different lengths.\n',
-        '\tYou supplied ', length(cmps), ' compounds.\n',
-        '\t`extra\' has a length of ', length(extra)
-        )
-
-    sdfs <- sdf.subset(db, cmps)
-    cids <- db$cids[cmps]
-
+        stop(paste('\n\tthe indices and the extra information have",
+            " different lengths.\n',
+            '\tYou supplied ', length(cmps), ' compounds.\n',
+            '\t`extra\' has a length of ', length(extra),
+            sep=''))
+    
+    ## ThG: added for compatability with new S4 classes APset/AP ##
+    if(class(db)=="SDFset") {
+    	sdfstr <- as(db, "SDFstr")
+	sdfs <- paste(paste(unlist(as(sdfstr, "list")), collapse="\n"), "\n", sep="")
+	cids <- cmps
+    } else {
+    	sdfs <- sdf.subset(db, cmps)
+    	cids <- db$cids[cmps]
+    }
+    ## ThG: end of lines ##
+    
     # build query
     query <- list(sdf=sdfs, cids=paste(cids, collapse="\1"))
     if (! is.null(extra)) {
@@ -553,8 +676,8 @@ sdf.visualize <- function(db, cmps, extra=NULL, reference.sdf=NULL,
     if (! is.null(reference.sdf)) {
         query <- c(query, list(referencesdf=reference.sdf))
         if (! is.null(reference.note)) {
-            if (class(reference.note) == 'list' && length(reference.note) == 1) 
-            {
+            if (class(reference.note) == 'list' &&
+                length(reference.note) == 1) {
                     if (! is.null(names(reference.note)))
                         query <- c(query,
                             list(referencenotename=names(reference.note)))
@@ -579,8 +702,8 @@ sdf.visualize <- function(db, cmps, extra=NULL, reference.sdf=NULL,
     '.*\\.\\.\\.\\.\\.\\.\\.\\.\\.\\.(.*)\\.\\.\\.\\.\\.\\.\\.\\.\\.\\..*',
     '\\1', response)
     if (! quiet)
-        cat('starting your browser (use `options(browser="...")` to', 
-        'customize browser)\n')
+        cat("starting your browser (use `options(browser=\"...\")' to", 
+            "customize browser)\n")
     url <- paste(
         c("http://bioweb.ucr.edu/ChemMineV2/chemminer/viewsdfs?", ref),
         collapse='')
@@ -588,7 +711,7 @@ sdf.visualize <- function(db, cmps, extra=NULL, reference.sdf=NULL,
     return(url)
 }
 
-# segment SDFs. given indecies of selected compounds, return the concatenation
+# segment SDFs. given indices of selected compounds, return the concatenation
 # of SDFs for them
 sdf.subset <- function(db, cmps)
 {
@@ -605,6 +728,7 @@ sdf.subset <- function(db, cmps)
     return(output)
 }
 
+## ThG: function is obsolete for APset class which works with standard R subsetting utilities.
 db.subset <- function(db, cmps)
 {
     return(list(descdb=db$descdb[cmps], cids=db$cids[cmps],
@@ -637,6 +761,16 @@ db.subset <- function(db, cmps)
 # explain an atom pair descriptor
 db.explain <- function(desc)
 {
+    ## ThG: added for compatability with new S4 classes APset/AP ##
+    if(class(desc)=="APset") desc <- ap(desc[[1]])
+    if(class(desc)=="AP") desc <- ap(desc) 
+    ## ThG: end of lines ##
+    if ('character' %in% class(desc)) {
+        if (.is.file.backed.desc(desc))
+            desc <- .load.file.backed.desc(desc)
+        else
+            stop("The descriptor(s) to be explained is not valid.")
+    }
     if (length(desc) == 1)
         return(.explain(desc))
     else {
@@ -755,8 +889,8 @@ db.explain <- function(desc)
 
         content <- paste(
             boundary, "\n",
-            "Content-Disposition: form-data; name=\"", as.character(key), "\"",
-            "\n",
+            "Content-Disposition: form-data; name=\"",
+            as.character(key), "\"", "\n",
             "\n",
             as.character(value), "\n",
             sep=""
@@ -825,9 +959,39 @@ db.explain <- function(desc)
 
 .data.frame.to.str <- function(x)
 {
-    string <- ''    # have to define this; otherwise will complain it undefined
     con <- textConnection("string", "w")
     write.table(format(x), con, row.names=F, quote=F)
     close(con)
     return(paste(string, collapse='\n'))
 } 
+
+.is.file.backed.desc <- function(desc)
+{
+    "character" %in% class(desc) && length(desc) == 3 && desc[[1]] == 'filedb:'
+}
+
+.load.file.backed.desc <- function(desc, dbcon=NULL, intsize=4)
+{
+    dbname <- desc[[2]]
+    pos <- desc[[3]]
+    closeme <- FALSE
+    if (is.null(dbcon)) {
+        db_a <- paste(dbname, '.cdb', sep='')
+        if (!file.exists(db_a)) stop("cannot find database file ", db_a)
+        dbcon <- file(db_a, 'rb')
+        closeme <- TRUE
+        seek(dbcon, .db.header.size)
+        intsize <- readBin(dbcon, integer(), n=1, size=1)
+    }
+    seek(dbcon, as.integer(pos))
+    size <- readBin(dbcon, integer(), n=1, size=intsize)
+    desc <- readBin(dbcon, integer(), n=size, size=intsize)
+    if (closeme) close(dbcon)
+    .factor_to_vector(as.factor(desc))
+}
+
+.has.pp <- function()
+{
+    !is.null(getOption('.use.chemminer.pp')) &&
+        getOption('.use.chemminer.pp') != 0
+}

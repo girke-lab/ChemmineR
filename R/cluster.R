@@ -14,6 +14,24 @@
 cmp.cluster <- function(db, cutoff, is.similarity=TRUE, save.distances=FALSE,
         use.distances=NULL, quiet=FALSE, ...)
 {
+    ## ThG: added for compatability with new S4 classes APset/AP
+    dbtype <- as.character(class(db))
+    if(dbtype=="APset") { db <- apset2descdb(db) }
+    ## ThG: end of lines
+    
+    # see if db if file-backed
+    dbcon <- NULL
+    intsize <- 4
+    if (db$type == 'file-backed') {
+        for (i in 1:length(db$descdb)) {
+            if (.is.file.backed.desc(db$descdb[[i]])) {
+                dbcon <- file(paste(db$descdb[[i]][[2]], '.cdb', sep=''), 'rb')
+                seek(dbcon, 16)
+                intsize <- readBin(dbcon, integer(), n=1, size=1)
+                break
+            }
+        }
+    }
     # prepare column names from cutoffs
     colname_f <- function(x) {paste("CLID_", x, collapse="", sep="")}
     colname <- apply(as.array(cutoff), 1, colname_f)
@@ -24,7 +42,10 @@ cmp.cluster <- function(db, cutoff, is.similarity=TRUE, save.distances=FALSE,
         cutoff <- 1 - cutoff
 
     if (save.distances != FALSE) {
-        distmat <- .calc.distmat(db$descdb, quiet=quiet, ...)
+        distmat <- .calc.distmat(db$descdb, quiet=quiet, 
+            dbcon.a=dbcon, dbcon.b=dbcon,
+            db.intsize.a=intsize, db.intsize.b=intsize,
+        ...)
         if ('character' %in% class(save.distances)) {
             save(distmat, file=save.distances)
         }
@@ -40,13 +61,18 @@ cmp.cluster <- function(db, cutoff, is.similarity=TRUE, save.distances=FALSE,
         distf <- function(i,j) {
             args <- list(...)
             if (! is.null(args$worst) || ! is.null(args$mode))
-                return(1 - cmp.similarity(db$descdb[[i]],
-                        db$descdb[[j]], ...))
+                return(1 - .cmp.similarity(db$descdb[[i]], db$descdb[[j]], 
+                        dbcon.a=dbcon, dbcon.b=dbcon,
+                        db.intsize.a=intsize, db.intsize.b=intsize,
+                        ...))
             else
-                return(1 - cmp.similarity(db$descdb[[i]],
-                        db$descdb[[j]], mode=1, worst=1 - cutoff[[1]]))
+                return(1 - .cmp.similarity(db$descdb[[i]], db$descdb[[j]], 
+                        dbcon.a=dbcon, dbcon.b=dbcon,
+                        db.intsize.a=intsize, db.intsize.b=intsize,
+                        mode=1, worst=1 - cutoff[[1]], ...))
         }
     }
+    if (!is.null(dbcon)) close(dbcon)
 
     # sort cutoffs decreasingly
     o <- order(cutoff, decreasing=TRUE)
@@ -103,6 +129,9 @@ cmp.cluster <- function(db, cutoff, is.similarity=TRUE, save.distances=FALSE,
 
     cat("\n")
     rownames(cluster_id) <- cluster_id[,1]
+    ## ThG: added to make function easier to use with new S4 classes APset/AP
+    if(dbtype=="APset") { cluster_id[,"ids"] <- db$cids[cluster_id[,"ids"]] }
+    ## ThG: end of lines
     return(cluster_id)
 }
 
@@ -114,14 +143,14 @@ cmp.cluster <- function(db, cutoff, is.similarity=TRUE, save.distances=FALSE,
     for (i in 1:(len-1)) {
         distmat[i, i] <- 0
         for (j in (i+1):len) {
-            d <- 1 - cmp.similarity(descdb[[i]], descdb[[j]], ...)
+            d <- 1 - .cmp.similarity(descdb[[i]], descdb[[j]], ...)
             distmat[i, j] <- d
             distmat[j, i] <- d
         }
         prog_ratio <- i / (len - 1)
         prog_ratio <- prog_ratio * 2 - prog_ratio * prog_ratio
         if (! quiet)
-        .progress_bar(paste(min(prog_ratio * 100, 100), "%", collapse=""))
+            .progress_bar(paste(min(prog_ratio * 100, 100), "%", collapse=""))
     }
     if (!quiet) cat("distance matrix is successfully generated\n")
     return(distmat)
@@ -148,10 +177,16 @@ cluster.sizestat <- function(cls, cluster.result=1)
 # non.interactive can be set to a filename
 cluster.visualize <- function(db, cls, size.cutoff, distmat=NULL,
         color.vector=NULL, non.interactive="", cluster.result=1,
-        dimensions=2, quiet=FALSE, ...)
+        dimensions=2, quiet=FALSE, highlight.compounds=NULL, 
+        highlight.color=NULL, ...)
 {
+    ## ThG: added for compatability with new S4 classes APset/AP
+    dbtype <- as.character(class(db))
+    if(dbtype=="APset") { db <- apset2descdb(db) }
+    ## ThG: end of lines
     cluster_col <- cluster.result * 2 + 1
-    cls_sel <- cls[cls[,2] >= size.cutoff,]
+    cls_is_large <- cls[,2] >= size.cutoff
+    cls_sel <- cls[cls_is_large,]
     cluster_ids <- levels(as.factor(cls_sel[,cluster_col]))
 
     if (is.null(color.vector)) {
@@ -169,8 +204,8 @@ cluster.visualize <- function(db, cls, size.cutoff, distmat=NULL,
     if (dimensions != 2) {
         coord <- cbind(mds_points, cls_sel[,cluster_col])
         rownames(coord) <- cls_sel$ids 
-        colnames(coord) <- c(paste('V', 1:dimensions, sep=''),
-                                colnames(cls_sel)[cluster_col])
+        colnames(coord) <-
+            c(paste('V', 1:dimensions, sep=''), colnames(cls_sel)[cluster_col])
         return(coord)
     }
  
@@ -178,18 +213,24 @@ cluster.visualize <- function(db, cls, size.cutoff, distmat=NULL,
         if (length(grep('\\.pdf$', non.interactive)) != 0)
             pdf(non.interactive)
     else if (length(grep('\\.ps$', non.interactive)) != 0 ||
-        length(grep('\\.eps$', non.interactive)) != 0)
+            length(grep('\\.eps$', non.interactive)) != 0)
             postscript(non.interactive, onefile=TRUE, horizontal=FALSE)
     else {
             warning("The filename you supplied has an unsupported extension.",
-                " We will add .pdf to it")
+                " We will add .pdf to the name.")
             pdf(paste(non.interactive, 'pdf', sep='.'))
     }
     }
     
     # set up the plot
-    plot(range(mds_points[,1]), range(mds_points[,2]), type="n",
-        xlab="", ylab="", main="Clustering Result")
+    plot(range(mds_points[,1]), range(mds_points[,2]), type="n", xlab="",
+        ylab="", main="Clustering Result")
+
+    # check highlight
+    if (!is.null(highlight.compounds)) {
+        cls_is_highlight <- cls[,1] %in% highlight.compounds
+        cls_sel_is_highlight <- cls_is_highlight[cls_is_large]
+    }
     
     for (i in 1:length(cluster_ids)) {
         col <- color.vector[i%%length(color.vector) + 1]
@@ -201,15 +242,23 @@ cluster.visualize <- function(db, cls, size.cutoff, distmat=NULL,
         # indices of points in this cluster
         in_cluster <- seq(1, length(cls_sel[,1]))[cls_sel[,cluster_col] == cid]
         points(mds_points[in_cluster,1], mds_points[in_cluster,2], col=col)
+        # check highlight
+        if (!is.null(highlight.compounds)) {
+            highlight_in_cluster <- cls_sel_is_highlight & cls_sel[,cluster_col] == cid
+            if (is.null(highlight.color)) .col <- col
+            else .col <- highlight.color
+            points(mds_points[highlight_in_cluster,1], mds_points[highlight_in_cluster,2], col=.col, pch=19)
+        }
     }
 
     # interactive
+    all.clicked <- rep(FALSE, length(cls_sel[,1]))
     if (non.interactive == "") {
         cat("=============================================================\n")
         cat("| Click points in a plot to get information on compounds    |\n")
         cat("| they represent.                                           |\n")
         cat("|                                                           |\n")
-        g_dev <- getOption('device')
+        g_dev <- .Platform$GUI
         if (is.character(g_dev) && g_dev == 'X11') 
             cat(
             "| right click on the plot to stop.                          |\n")
@@ -219,9 +268,10 @@ cluster.visualize <- function(db, cls, size.cutoff, distmat=NULL,
         cat("=============================================================\n\n")
         while(TRUE) {
             clicked <- identify(mds_points[,1], y=mds_points[,2],
-                labels=cls_sel$ids, n=1)
+                            labels=cls_sel$ids, n=1)
             if (length(clicked) == 0) break
             index <- cls_sel$ids[clicked]
+            all.clicked[clicked] <- TRUE
             output <- data.frame(c(db$cids[index], cls[cls$ids==index,]))
             names(output) <- c('Compound ID', colnames(cls))
             print(output)
@@ -230,25 +280,40 @@ cluster.visualize <- function(db, cls, size.cutoff, distmat=NULL,
         dev.off()
     }
 
-    coord <- cbind(mds_points, cls_sel[,cluster_col])
+    coord <- cbind(mds_points, cls_sel[,cluster_col], all.clicked)
     rownames(coord) <- cls_sel$ids 
     colnames(coord) <- c(paste('V', 1:dimensions, sep=''),
-                        colnames(cls_sel)[cluster_col])
+                        colnames(cls_sel)[cluster_col], 'Clicked')
     return(coord)
 }
 
 # fast detection of duplicated compounds
 # first all descriptors are concatenated as character strigns. then `duplicated'
 # are called to detect (potentially) duplicated compounds
-cmp.duplicated <- function(db, sort=FALSE)
+cmp.duplicated <- function(db, sort=FALSE, type=1)
 {
+    ## ThG: added for compatability with new S4 classes APset/AP
+    dbtype <- as.character(class(db))
+    if(dbtype=="APset") { db <- apset2descdb(db) }
+    ## ThG: end of lines
     if (!sort)
         f <- function(x) {paste(x, collapse=" ")}
     else
         f <- function(x) {paste(sort(x), collapse=" ")}
 
     db_str <- lapply(db$descdb, f)
-    dup <- duplicated(db_str)
+    ## ThG: added to also return duplicates in a cluster data frame
+    if(type==1) { 
+	dup <- duplicated(db_str) 
+    }
+    if(type==2) {
+    	names(db_str) <- db$cids; 
+    	db_str <- tapply(names(db_str), as.character(db_str), paste)
+    	names(db_str) <- 1:length(db_str)
+    	clsz <- sapply(db_str, length)
+    	dup <- data.frame(ids=unlist(db_str), CLSZ_100=rep(clsz, clsz), CLID_100=rep(1:length(db_str), clsz))
+    }
+    ## ThG: end of lines
     return(dup)
 }
 

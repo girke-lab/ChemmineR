@@ -1,1 +1,59 @@
-export("cmp.cluster", "cmp.search", "cmp.similarity", "cmp.parse", "cmp.parse1", "sdf.subset", "db.explain", "cluster.sizestat", "cluster.visualize", "cmp.duplicated", "sdf.visualize", "db.subset")
+## IMPORTS
+import(methods, graphics, stats)
+
+## EXPORTS
+## S4 Classes
+## Source: AllClasses.R
+exportClasses(
+    "SDFstr", "SDF", "SDFset", "AP", "APset"
+)
+
+## Methods
+## Source: AllClasses.R
+exportMethods(
+    "sdfstr2list", "sdf2list", "sdf2str", "SDFset2list", "SDFset2SDF",
+    "sdfstr2list<-", "SDFset2SDF<-", "cid<-", 
+    "header<-", "atomblock<-", "bondblock<-", "datablock<-",
+    "[", "[[", "[<-", "[[<-", "coerce",
+    "show", "length", "c", "plot", 
+    "header", "atomblock", "bondblock", "datablock", "view",
+    "cid", "sdfid", "atomcount", "datablocktag",
+    
+    ## Atom pair methods
+    ## Source: AllClasses.R
+    "ap"
+)
+
+## Functions
+# exportPattern("^[[:alpha:]]+")
+export(
+    ## Data sets
+    ## Source: ./data/
+    "atomprop", 
+    
+    ## Import/exports
+    ## Source: AllClasses.R
+    "read.SDFstr", "read.SDFset", "write.SDF",
+
+    ## Utilities
+    ## Source: AllClasses.R
+    "validSDF", "makeUnique", "atomcountMA", "MW", "MF", 
+    "datablock2ma", "splitNumChar",  
+    "grepSDFset", 
+   
+    ## Plotting
+    ## Source: AllClasses.R
+    "plotStruc", 
+
+    ## Atom pair functions
+    ## Source: sim.R
+    "SDF2apcmp", "sdf2ap", "apset2descdb", 
+    "cmp.search", "cmp.similarity", "cmp.parse", "cmp.parse1", 
+    "sdf.subset", "db.explain", "cluster.sizestat", 
+    "cmp.duplicated", "sdf.visualize", "db.subset",
+
+    ## Clustering functions
+    ## Source: cluster.R
+    "cmp.cluster", "cluster.visualize" 
+)
+

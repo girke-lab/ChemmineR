@@ -1,0 +1,24 @@
+## To check rendering of citation, run readCitationFile("CITATION")
+
+citHeader("To cite package 'ChemmineR' in publications use:")
+     
+## R >= 2.8.0 passes package metadata to citation().
+if(!exists("meta") || is.null(meta)) meta <- packageDescription("nlme")
+year <- sub(".*(2[[:digit:]]{3})-.*", "\\1", meta$Date)
+vers <- paste("R package version", meta$Version)
+
+citEntry(entry="Article",
+        author = "Cao, Y and Charisi, A and Cheng, L C and Jiang, T and Girke, T",
+        title = "{ChemmineR: a compound mining framework for R}",
+        journal = "Bioinformatics",
+        year = "2008",
+        volume = "24",
+        number = "15",
+        pages = "1733-1734",
+        month = "Aug",
+
+        textVersion = paste("Cao, Y, Charisi, A, Cheng, L C, Jiang, T, Girke, T ", "(2008) ", 
+        "ChemmineR: a compound mining framework for R. Bioinformatics, 24: 1733-1734. ",
+        "URL: http://www.hubmed.org/display.cgi?uids=18596077", ".", sep=""))
+
+ 
