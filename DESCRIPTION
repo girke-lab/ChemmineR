@@ -1,7 +1,7 @@
 Package: ChemmineR
 Type: Package
 Title: Analysis of Small Molecule and Screening Data
-Version: 2.1.7
+Version: 2.1.8
 Date: 2011-2-28
 Author: Y. Eddie Cao, Tyler Backman, Yan Wang, Thomas Girke
 Maintainer: ChemmineR Team <see@url>
