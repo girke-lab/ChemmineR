@@ -910,7 +910,7 @@ grepSDFset <- function(pattern, x, field="datablock", mode="subset", ignore.case
 ## (6) Plotting Methods ##
 ##########################
 ## Plot single CMP Structure
-plotStruc <- function(sdf, atomcex=1.2, atomnum=FALSE, no_print_atoms=c("C"), noHbonds=TRUE, bondspacer=0.08, ...) {
+plotStruc <- function(sdf, atomcex=1.2, atomnum=FALSE, no_print_atoms=c("C"), noHbonds=TRUE, bondspacer=0.12, ...) {
 	toplot <- list(atomblock=atomblock(sdf)[,1:2], bondblock=bondblock(sdf)[,1:3])
 	## Create empty plot with proper dimensions
 	plot(toplot[[1]], type="n", axes=F, xlab="", ylab="", ...)
@@ -950,7 +950,7 @@ plotStruc <- function(sdf, atomcex=1.2, atomnum=FALSE, no_print_atoms=c("C"), no
 	if(is.matrix(labelMA) & length(labelMA[,1])>=1) {
 		atomcol <- gsub("_.*", "", rownames(labelMA)); atomcol[!grepl("N|C|O|H", atomcol)] <- "any"; mycol <- c(C="black", H="black", N="blue", O="red", any="green"); atomcol <- mycol[atomcol]
 		## Overplot nodes to display atom labels
-		points(x=labelMA[,1], y=labelMA[,2], col="white", lwd=12)
+		points(x=labelMA[,1], y=labelMA[,2], col="white", pch=16, cex=2.8)
 		## Plot atom labels
 		if(atomnum==TRUE) {
 			text(x=labelMA[,1], y=labelMA[,2], gsub("_", "", rownames(labelMA)), cex=atomcex, col=atomcol) 

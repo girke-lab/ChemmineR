@@ -13,7 +13,7 @@ Plots compound structure(s) for molecules stored in SDF and SDFset containers.
 
 ## Less important for user 
 plotStruc(sdf, atomcex = 1.2, atomnum = FALSE, no_print_atoms = c("C"),
-          noHbonds = TRUE, bondspacer = 0.08, ...)
+          noHbonds = TRUE, bondspacer = 0.12, ...)
 }
 
 \arguments{
