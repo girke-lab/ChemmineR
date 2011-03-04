@@ -729,11 +729,19 @@ dummy <- cmp.cluster(db=apset, cutoff=0, save.distances="distmat.rda", quiet=TRU
 load("distmat.rda")
 @
 
-\noindent Hierarchical clustering with \Rfunction{hclust}
+\noindent Hierarchical clustering with \Rfunction{hclust}:
 <<hclust, eval=TRUE, fig=TRUE, keep.source=TRUE>>=
 hc <- hclust(as.dist(distmat), method="single")
 hc[["labels"]] <- cid(apset) # Assign correct item labels
 plot(as.dendrogram(hc), edgePar=list(col=4, lwd=2), horiz=T) 
+@
+
+\noindent Plot dendrogram with heatmap (here similarity matrix):
+<<heatmap, eval=TRUE, fig=TRUE, keep.source=TRUE>>=
+library(gplots)
+heatmap.2(1-distmat, Rowv=as.dendrogram(hc), Colv=as.dendrogram(hc), 
+          col=colorpanel(40, "darkblue", "yellow", "white"), 
+          density.info="none", trace="none")
 @
 
 \section{Version Information}
