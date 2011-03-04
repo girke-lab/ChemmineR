@@ -481,17 +481,23 @@ numchar[[1]][1:4,]; numchar[[2]][1:4,]
 \subsection{R Graphics Device}
 A new plotting function for compound structures has been added to the package recently. This function uses the native R graphics device for generating compound depictions. At this point this function is still in an experimental developmental stage but should become stable soon.  \\
 
-\noindent Plot Compound Structures with R's graphics device
+\noindent Plot compound Structures with R's graphics device:
 <<plotstruct2, eval=TRUE, fig=TRUE, keep.source=TRUE>>=
 data(sdfsample); sdfset <- sdfsample
 plot(sdfset[1:4], print=FALSE) # 'print=TRUE' returns SDF summaries
 @
 
-\noindent Customize plot:
+\noindent Customized plots:
 <<eval=FALSE, keep.source=TRUE>>=
 plot(sdfset[1:4], griddim=c(2,2), print_cid=letters[1:4], print=FALSE, 
      noHbonds=FALSE)
 @
+<<plotstruct3, eval=TRUE, fig=TRUE, keep.source=TRUE>>=
+plot(sdfset["CMP1"], atomnum = TRUE,  noHbonds=F , no_print_atoms = "", 
+     atomcex=0.8, sub=paste("MW:", MW(sdfsample["CMP1"])), print=FALSE)
+@
+
+\noindent For more details, consult help documentation with \Rfunction{?plotStruc} or \Rfunction{?plot}.
 
 \subsection{Online with ChemMine Tools}
 Alternatively, one can visualize compound structures with a standard web browser using the online ChemMine Tools service. The service allows to display other information next to the structures using the extra argument of the \Rfunction{sdf.visualize} function. The following examples demonstrate, how one can plot and annotate structures by passing on extra data as vector of character strings, matrices or lists.  \\
