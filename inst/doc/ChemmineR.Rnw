@@ -595,7 +595,7 @@ The \Rfunction{cmp.search} function allows to visualize the chemical structures 
 \noindent View similarity search results in R's graphics device:
 <<search_result, eval=TRUE, fig=TRUE, keep.source=TRUE>>=
 cid(sdfset) <- cid(apset) # Assure compound name consistency among objects.
-plot(sdfset[names(cmp.search(apset, apset[6], type=2, cutoff=4, quiet=TRUE))], 
+plot(sdfset[names(cmp.search(apset, apset["650065"], type=2, cutoff=4, quiet=TRUE))], 
      print=FALSE)
 @
 
@@ -610,13 +610,18 @@ sdf.visualize(sdfset[similarities[,1]], extra=similarities[,3])
 \subsection{Clustering Identical or Very Similar Compounds}
 Often it is of interest to identify very similar or identical compounds in a
 compound set. The \Rfunction{cmp.duplicated} function can be used to quickly
-identify very similar compounds in compound sets, which will be frequently, but
+identify very similar compounds in atom pair sets, which will be frequently, but
 not necessarily, identical compounds.\\ 
 
 \noindent Identify compounds with identical AP sets:
 <<eval=TRUE, keep.source=TRUE>>=
 cmp.duplicated(apset, type=1)[1:4] # Returns AP duplicates as logical vector
 cmp.duplicated(apset, type=2)[1:4,] # Returns AP duplicates as data frame
+@
+
+\noindent Plot the structure of two pairs of duplicates: 
+<<duplicates, eval=TRUE, fig=TRUE, keep.source=TRUE>>=
+plot(sdfset[c("650059","650060", "650065", "650066")], print=FALSE)
 @
 
 \noindent Remove AP duplicates from SDFset and APset objects:
@@ -640,7 +645,7 @@ count[1:4]
 
 \subsection{Binning Clustering} 
 Compound libraries can be clustered into discrete similarity groups with the
-binning clustering function \Rfunction{cmp.cluster}. The function requires as input a
+binning clustering function \Rfunction{cmp.cluster}. The function requires as input an atom pair 
 descriptor database as well as a similarity threshold. The binning clustering
 result is returned in form of a data frame. Single linkage is used for cluster
 joining. The function calculates the required compound-to-compound distance
