@@ -1020,7 +1020,7 @@ fp2bit <- function(x, type=2, fptag="PUBCHEM_CACTVS_SUBSKEYS") {
 	fp <- blockmatrix[, fptag]
 	fpma <- unlist(strsplit(fp, ""))
 	fpma <- matrix(fpma, length(fp), nchar(fp[1]), byrow=TRUE)
-	fpma <- fpma[, 5:154]
+	fpma <- fpma[, 1:154] # remove padding signs '='
 
 	## base 64 decoding (base 64 alphabet from http://www.faqs.org/rfcs/rfc3548.html)
 	base64 <- c(A=0,B=1,C=2,D=3,E=4,F=5,G=6,H=7,I=8,J=9,K=10,L=11,M=12,N=13,O=14,P=15,
@@ -1029,8 +1029,8 @@ fp2bit <- function(x, type=2, fptag="PUBCHEM_CACTVS_SUBSKEYS") {
                     s=44,t=45,u=46,v=47,w=48,x=49,y=50,z=51,"0"=52,"1"=53,"2"=54,"3"=55,
                     "4"=56,"5"=57,"6"=58,"7"=59,"8"=60,"9"=61,"+"=62,"/"=63)
 	fpbitma <- as.integer(intToBits(base64[as.vector(t(fpma))]))
-	fpbitma <- matrix(fpbitma, length(fpma[,1])*150, 32, byrow=TRUE)[,6:1]
-	fpbitma <- matrix(t(fpbitma), length(fpma[,1]), 6*150, byrow=TRUE)[,1:881]
+	fpbitma <- matrix(fpbitma, length(fpma[,1])*154, 32, byrow=TRUE)[,6:1]
+	fpbitma <- matrix(t(fpbitma), length(fpma[,1]), 6*154, byrow=TRUE)[,33:913]
         pubchemFP <- pubchemFPencoding[,2]
 	names(pubchemFP) <- pubchemFPencoding[,1]
 	colnames(fpbitma) <- pubchemFP
