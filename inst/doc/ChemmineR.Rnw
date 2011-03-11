@@ -571,14 +571,28 @@ save(apset, file = "apset.rda", compress = TRUE)
 load("apset.rda")
 @
 
-\subsection{Pairwise Compound Comparisons}
-\noindent The \Rfunction{cmp.similarity} function computes the atom pair similarity between two compounds using the Tanimoto coefficient as similarity measure. 
+\subsection{Pairwise Compound Comparisons with Atom Pairs}
+\noindent The \Rfunction{cmp.similarity} function computes the atom pair similarity between two compounds using the Tanimoto coefficient as similarity measure. The coefficient is defined as $c/(a+b+c)$, which is the proportion of the atom pairs shared among two compounds divided by their union. The variable $c$ is the number of atom pairs common in both compounds, while $a$ and $b$ are the numbers of their unique atom pairs. 
 <<eval=TRUE, keep.source=TRUE>>=
 cmp.similarity(apset[1], apset[2])
 cmp.similarity(apset[1], apset[1])
 @
 
-\subsection{Similarity Searching}
+\subsection{Pairwise Compound Comparisons with PubChem Fingerprints}
+\noindent The \Rfunction{fpSim} function computes the Tanimoto coefficients for pairwise comparisons of binary fingerprints. For this data type, $c$ is the number of "on-bits" common in both compounds, and $a$ and $b$ are the numbers of their unique "on-bits". Currently, the PubChem fingerprints need to be provided (here PubChem's SD files) and cannot be computed from scratch in \Rpackage{ChemmineR}. The PubChem fingerprint specifications can be loaded with \Rfunction{data(pubchemFPencoding)}.\\
+
+\noindent Convert base 64 encoded PubChem fingerprints to character vector or binary matrix:
+<<eval=TRUE, keep.source=TRUE>>=
+fpset <- fp2bit(x=sdfset, type=1) 
+fpset <- fp2bit(x=sdfset, type=2)
+@
+
+\noindent Pairwise compound structure comparisons:
+<<eval=TRUE, keep.source=TRUE>>=
+fpSim(x=fpset[1,], y=fpset[2,])
+@
+
+\subsection{Similarity Searching with Atom Pairs}
 The \Rfunction{cmp.search} function searches an atom pair database for compounds that are similar to a query compound. The following example returns a data frame where the rows are sorted by the Tanimoto similarity score (best to worst). The first column contains the indices of the matching compounds in the database. The argument cutoff can be a similarity cutoff, meaning only compounds with a similarity value larger than this cutoff will be returned; or it can be an integer value restricting how many compounds will be returned. When supplying a cutoff of 0, the function will return the similarity values for every compound in the database.
 <<eval=TRUE, keep.source=TRUE>>=
 cmp.search(apset, apset[1], type=3, cutoff = 0.3, quiet=TRUE) 
@@ -589,14 +603,20 @@ cmp.search(apset, apset[1], type=1, cutoff = 0.3, quiet=TRUE)
 cmp.search(apset, apset[1], type=2, cutoff = 0.3, quiet=TRUE) 
 @
 
+\subsection{Similarity Searching with PubChem Fingerprints}
+Similarly, the \Rfunction{fpSim} function provides search functionality for PubChem fingerprints:
+<<eval=TRUE, keep.source=TRUE>>=
+fpSim(x=fpset[1,], y=fpset)[1:6] # x is query and y is fingerprint database
+@
+
 \subsection{Visualize Similarity Search Results}
 The \Rfunction{cmp.search} function allows to visualize the chemical structures for the search results. Similar but more flexible chemical structure rendering functions are \Rfunction{plot} and \Rfunction{sdf.visualize} described above. By setting the visualize argument in \Rfunction{cmp.search} to \Rfunarg{TRUE}, the matching compounds and their scores can be visualized with a standard web browser. Depending on the \Rfunarg{visualize.browse} argument, an URL will be printed or a webpage will be opened showing the structures of the matching compounds along with their scores.\\ 
 
 \noindent View similarity search results in R's graphics device:
 <<search_result, eval=TRUE, fig=TRUE, keep.source=TRUE>>=
 cid(sdfset) <- cid(apset) # Assure compound name consistency among objects.
-plot(sdfset[names(cmp.search(apset, apset["650065"], type=2, cutoff=4, quiet=TRUE))], 
-     print=FALSE)
+plot(sdfset[names(cmp.search(apset, apset["650065"], type=2, cutoff=4, 
+     quiet=TRUE))], print=FALSE)
 @
 
 \noindent View results online with Chemmine Tools:
@@ -739,6 +759,13 @@ load("distmat.rda")
 hc <- hclust(as.dist(distmat), method="single")
 hc[["labels"]] <- cid(apset) # Assign correct item labels
 plot(as.dendrogram(hc), edgePar=list(col=4, lwd=2), horiz=T) 
+@
+
+\noindent Instead of atom pairs one can use PubChem's fingerprints for clustering: 
+<<fp_hclust, eval=FALSE, keep.source=TRUE>>=
+simMA <- sapply(rownames(fpset), function(x) fpSim(x=fpset[x,], fpset)) 
+hc <- hclust(as.dist(simMA), method="single")  
+plot(as.dendrogram(hc), edgePar=list(col=4, lwd=2), horiz=TRUE)
 @
 
 \noindent Plot dendrogram with heatmap (here similarity matrix):

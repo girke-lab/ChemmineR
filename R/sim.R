@@ -995,3 +995,68 @@ db.explain <- function(desc)
     !is.null(getOption('.use.chemminer.pp')) &&
         getOption('.use.chemminer.pp') != 0
 }
+
+########### New Functions ###########
+
+##############################################
+## PubChem Fingerprint Similarity Searching ##
+##############################################
+
+## Convert base 64 encoded PubChem fingerprints to binary matrix or string vector
+## Definition of PubChem's substructure dictionary-based fingerprints:
+## ftp://ftp.ncbi.nih.gov/pubchem/specifications/pubchem_fingerprints.txt
+## For debugging use command: as.integer(rev(intToBits("19")[1:6])) 
+
+## Load PubChem's substructure dictionary from data dir of library 
+data(pubchemFPencoding); pubchemFPencoding <- pubchemFPencoding 
+fp2bit <- function(x, type=2, fptag="PUBCHEM_CACTVS_SUBSKEYS") {
+	## Covert base 64 strings to matrix
+	if(class(x)=="SDFset") {
+		blockmatrix <- datablock2ma(datablocklist=datablock(x))
+	}
+	if(class(x)=="matrix") { 
+		blockmatrix <- x
+	}
+	fp <- blockmatrix[, fptag]
+	fpma <- unlist(strsplit(fp, ""))
+	fpma <- matrix(fpma, length(fp), nchar(fp[1]), byrow=TRUE)
+	fpma <- fpma[, 5:154]
+
+	## base 64 decoding (base 64 alphabet from http://www.faqs.org/rfcs/rfc3548.html)
+	base64 <- c(A=0,B=1,C=2,D=3,E=4,F=5,G=6,H=7,I=8,J=9,K=10,L=11,M=12,N=13,O=14,P=15,
+                    Q=16,R=17,S=18,T=19,U=20,V=21,W=22,X=23,Y=24,Z=25,a=26,b=27,c=28,d=29,
+                    e=30,f=31,g=32,h=33,i=34,j=35,k=36,l=37,m=38,n=39,o=40,p=41,q=42,r=43,
+                    s=44,t=45,u=46,v=47,w=48,x=49,y=50,z=51,"0"=52,"1"=53,"2"=54,"3"=55,
+                    "4"=56,"5"=57,"6"=58,"7"=59,"8"=60,"9"=61,"+"=62,"/"=63)
+	fpbitma <- as.integer(intToBits(base64[as.vector(t(fpma))]))
+	fpbitma <- matrix(fpbitma, length(fpma[,1])*150, 32, byrow=TRUE)[,6:1]
+	fpbitma <- matrix(t(fpbitma), length(fpma[,1]), 6*150, byrow=TRUE)[,1:881]
+        pubchemFP <- pubchemFPencoding[,2]
+	names(pubchemFP) <- pubchemFPencoding[,1]
+	colnames(fpbitma) <- pubchemFP
+	rownames(fpbitma) <- names(fp)
+	if(type==1) {
+                return(apply(fpbitma, 1, paste, collapse=""))  
+        }
+	if(type==2) {
+                return(fpbitma)
+        }
+}
+
+## Fingerprint similarity search function 
+fpSim <- function(x, y) {
+	if(!is.vector(x)) stop("x needs to be vector")
+        if(!any(c(is.vector(y),is.matrix(y)))) stop("y needs to be vector or matrix")
+	if(class(y)=="matrix") {
+		c <- colSums((t(y) + x) == 2)
+		b <- rowSums(y) - c
+	} else {
+		c <- sum(x + y == 2)
+		b <- sum(y) - c
+	}
+	a <- sum(x) - c
+	return(c/(c+a+b))
+}
+
+
+

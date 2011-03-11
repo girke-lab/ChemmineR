@@ -29,7 +29,7 @@ exportMethods(
 export(
     ## Data sets
     ## Source: ./data/
-    "atomprop", 
+    "atomprop", "pubchemFPencoding", 
     
     ## Import/exports
     ## Source: AllClasses.R
@@ -51,6 +51,10 @@ export(
     "cmp.search", "cmp.similarity", "cmp.parse", "cmp.parse1", 
     "sdf.subset", "db.explain", "cluster.sizestat", 
     "cmp.duplicated", "sdf.visualize", "db.subset",
+    
+    ## Fingerprint functions
+    ## Source: sim.R
+    "fp2bit", "fpSim",
 
     ## Clustering functions
     ## Source: cluster.R
