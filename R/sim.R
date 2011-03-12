@@ -1055,7 +1055,7 @@ fpSim <- function(x, y) {
 		b <- sum(y) - c
 	}
 	a <- sum(x) - c
-	return(c/(c+a+b))
+	return(rev(sort(c/(c+a+b))))
 }
 
 

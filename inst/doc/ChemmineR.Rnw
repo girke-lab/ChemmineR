@@ -583,6 +583,7 @@ cmp.similarity(apset[1], apset[1])
 
 \noindent Convert base 64 encoded PubChem fingerprints to character vector or binary matrix:
 <<eval=TRUE, keep.source=TRUE>>=
+cid(sdfset) <- sdfid(sdfset)
 fpset <- fp2bit(x=sdfset, type=1) 
 fpset <- fp2bit(x=sdfset, type=2)
 @
@@ -595,18 +596,18 @@ fpSim(x=fpset[1,], y=fpset[2,])
 \subsection{Similarity Searching with Atom Pairs}
 The \Rfunction{cmp.search} function searches an atom pair database for compounds that are similar to a query compound. The following example returns a data frame where the rows are sorted by the Tanimoto similarity score (best to worst). The first column contains the indices of the matching compounds in the database. The argument cutoff can be a similarity cutoff, meaning only compounds with a similarity value larger than this cutoff will be returned; or it can be an integer value restricting how many compounds will be returned. When supplying a cutoff of 0, the function will return the similarity values for every compound in the database.
 <<eval=TRUE, keep.source=TRUE>>=
-cmp.search(apset, apset[1], type=3, cutoff = 0.3, quiet=TRUE) 
+cmp.search(apset, apset["650065"], type=3, cutoff = 0.3, quiet=TRUE) 
 @
 Alternatively, the function can return the matches in form of an index or a named vector if the \Rfunarg{type} argument is set to \Rfunarg{1} or \Rfunarg{2}, respectively. 
 <<eval=TRUE, keep.source=TRUE>>=
-cmp.search(apset, apset[1], type=1, cutoff = 0.3, quiet=TRUE) 
-cmp.search(apset, apset[1], type=2, cutoff = 0.3, quiet=TRUE) 
+cmp.search(apset, apset["650065"], type=1, cutoff = 0.3, quiet=TRUE) 
+cmp.search(apset, apset["650065"], type=2, cutoff = 0.3, quiet=TRUE) 
 @
 
 \subsection{Similarity Searching with PubChem Fingerprints}
 Similarly, the \Rfunction{fpSim} function provides search functionality for PubChem fingerprints:
 <<eval=TRUE, keep.source=TRUE>>=
-fpSim(x=fpset[1,], y=fpset)[1:6] # x is query and y is fingerprint database
+fpSim(x=fpset["650065",], y=fpset)[1:6] # x is query and y is fingerprint database
 @
 
 \subsection{Visualize Similarity Search Results}

@@ -1,5 +1,8 @@
 changelog
-	version 2.1.5
+	version 2.2.0 - 2.2.11
+		- added support for PubChem fingerprints
+	
+        version 2.1.5
 		- added validSDF function
 
 	version 2.1.4
