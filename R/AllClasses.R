@@ -324,9 +324,7 @@ read.SDFset <- function(sdfstr=sdfstr, ...) {
 	sdfset <- lapply(seq(along=sdfstr@a), function(x) .sdfParse(sdfstr2list(sdfstr)[[x]], ...))
 	sdfset <- new("SDFset", SDF=sdfset, ID=paste("CMP", seq(along=sdfset), sep=""))
         ## Validity check of SDFs based on atom/bond block column numbers
-	ab <- atomblock(sdfset); abcol <- sapply(names(ab), function(x) length(ab[[x]][1,]))
-        bb <- bondblock(sdfset); bbcol <- sapply(names(bb), function(x) length(bb[[x]][1,]))
-        badsdf <- abcol < 3 | bbcol < 3
+        badsdf <- sum(!validSDF(sdfset))
         if(sum(badsdf)!=0) warning(paste(c(sum(badsdf), " invalid SDFs detected. To fix, run: valid <- validSDF(sdfset); sdfset <- sdfset[valid]")))
         return(sdfset)
 }
