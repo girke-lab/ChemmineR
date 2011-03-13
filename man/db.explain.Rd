@@ -22,13 +22,17 @@ db.explain(desc)
 
 \seealso{\code{\link{cmp.parse}}}
 \examples{
-# load sample database from web
-db <- cmp.parse("http://bioweb.ucr.edu/ChemMineV2/static/example_db.sdf")
-# explain descriptor 1 of compound 1
-db.explain(db$descdb[[1]][[1]])
-# explain descriptor 1 to 10 of compound 1
-db.explain(db$descdb[[1]][1:10])
-# explain all descriptors of compound 1
-db.explain(db$descdb[[1]])
+## Load sample SD file
+# data(sdfsample); sdfset <- sdfsample
+
+## Generate atom pair descriptor database for searching
+# apset <- sdf2ap(sdfset) 
+
+## Loads same atom pair sample data set provided by library
+data(apset) 
+db <- apset
+
+## Return atom pairs of first compound in human readable format
+db.explain(db[1])
 }
 \keyword{utilities}

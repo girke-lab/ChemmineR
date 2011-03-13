@@ -58,8 +58,15 @@ and similarity coefficients", in \emph{J Chem Inf Comput Sci}.}
 	\code{\link{cmp.cluster}},
 \code{\link{cmp.similarity}}}
 \examples{
-# load sample database from web
-db <- cmp.parse("http://bioweb.ucr.edu/ChemMineV2/static/example_db.sdf")
+## Load sample SD file
+# data(sdfsample); sdfset <- sdfsample
+
+## Generate atom pair descriptor database for searching
+# apset <- sdf2ap(sdfset) 
+
+## Loads same atom pair sample data set provided by library
+data(apset) 
+db <- apset
 # (optinally) save the db for future use
 save(db, file="db.rda", compress=TRUE)
 # ...

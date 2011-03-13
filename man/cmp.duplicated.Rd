@@ -47,20 +47,25 @@
 \author{Y. Eddie Cao}
 \seealso{\code{\link{cmp.parse}}, \code{\link{cmp.search}}}
 \examples{
-# load sample database from web
-db <- cmp.parse("http://bioweb.ucr.edu/ChemMineV2/static/example_db.sdf")
-# manually create a duplication
-# note that we ignore the other information in the database and only consider
-# the descriptor information
-db$descdb[[89]] <- db$descdb[[10]]
-length(db$descdb)
-# find duplication
+## Load sample SD file
+# data(sdfsample); sdfset <- sdfsample
+
+## Generate atom pair descriptor database for searching
+# apset <- sdf2ap(sdfset) 
+
+## Loads same atom pair sample data set provided by library
+data(apset) 
+db <- apset
+
+## Manually create a duplication (here compound 1 and 10)
+db[10] <- db[1]
+
+## Find duplication
 dup <- cmp.duplicated(db)
-# locate duplicated compound using search
-cmp.search(db, db$descdb[dup][[1]], cutoff=1, quiet=TRUE)
-# remove duplication from db
-db$descdb <- db$descdb[!dup]
-# normally you should also clear the entries in db$cids and db$sdfsegs
-length(db$descdb)
+dup
+cid(db[dup])
+
+## Remove all duplications 
+db <- db[!dup]
 }
 \keyword{utilities}

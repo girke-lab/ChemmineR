@@ -68,19 +68,24 @@ and similarity coefficients", in \emph{J Chem Inf Comput Sci}.}
 	\code{\link{cmp.search}}, \code{\link{cmp.cluster}},
 	\code{\link{cmp.similarity}}, \code{\link{sdf.visualize}}}
 \examples{
-# load sample database from web
-db <- cmp.parse("http://bioweb.ucr.edu/ChemMineV2/static/example_db.sdf")
-# (optinally) save the db for future use
+## Load sample SD file
+# data(sdfsample); sdfset <- sdfsample
+
+## Generate atom pair descriptor database for searching
+# apset <- sdf2ap(sdfset) 
+
+## Loads same atom pair sample data set provided by library
+data(apset) 
+db <- apset
+query <- db[1]
+
+## Ooptinally, save the db for future use
 save(db, file="db.rda", compress=TRUE)
-# load SDF of query struture from web
-url <- "http://bioweb.ucr.edu/ChemMineV2/compound/Aurora/b32:NNQS2MBRHAZTI===/sdf"
-query <- cmp.parse1(url)
-# search for similar compounds using similarity cutoff
-cmp.search(db, query, cutoff=0.4)
-# search for similar compounds using similarity cutoff; request to return scores
-cmp.search(db, query, cutoff=0.4, return.score=TRUE)
-# search for similar compounds using return-the-top-N style
-cmp.search(db, query, cutoff=10, return.score=TRUE)
+
+## Search for similar compounds using similarity cutoff
+cmp.search(db, query, cutoff=0.2, type=1) # returns index
+cmp.search(db, query, cutoff=0.2, type=2) # returns named vector
+cmp.search(db, query, cutoff=0.2, type=3) # returns data frame
 
 # you may visualize the search result in ChemMine
 \dontrun{cmp.search(db, query, cutoff=10, visualize=TRUE, visualize.browse=FALSE, visualize.query=url)}

@@ -52,17 +52,19 @@ and similarity coefficients", in \emph{J Chem Inf Comput Sci}.
 \seealso{\code{\link{cmp.parse1}}, \code{\link{cmp.parse}},
 	\code{\link{cmp.search}}, \code{\link{cmp.cluster}}}
 \examples{
-# load sample database from web
-db <- cmp.parse("http://bioweb.ucr.edu/ChemMineV2/static/example_db.sdf")
-# compare two compounds in the database:
-attach(db)              
-cmp.similarity(descdb[[1]], descdb[[2]])
-detach(db)
+## Load sample SD file
+# data(sdfsample); sdfset <- sdfsample
 
-# or load a structure from its SDF
-query <- cmp.parse1(
-    "http://bioweb.ucr.edu/ChemMineV2/compound/Aurora/b32:NNQS2MBRHAZTI===/sdf")
-# compare it against a structure in database
-cmp.similarity(query, db$descdb[[2]])
+## Generate atom pair descriptor database for searching
+# apset <- sdf2ap(sdfset) 
+
+## Loads same atom pair sample data set provided by library
+data(apset) 
+
+## Compute similarities among two compounds
+cmp.similarity(apset[1], apset[2])
+
+## Search apset database with a query compound
+cmp.search(apset, apset[1], type=3, cutoff = 0.3)
 }
 \keyword{utilities}

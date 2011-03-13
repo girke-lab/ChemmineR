@@ -70,23 +70,23 @@ sdf.visualize(db, cmps, extra=NULL, reference.sdf=NULL, reference.note=NULL, bro
 
 \seealso{\code{\link{cmp.parse}}, \code{\link{sdf.subset}}, \code{\link{plotStruc}}}
 \examples{
-# load sample database from web
-db <- cmp.parse("http://bioweb.ucr.edu/ChemMineV2/static/example_db.sdf")
-# set default browser to firefox
-options(browser="firefox")
-# select SDF for 1st and 2nd compound in that SDF and visualize it
-# url will contain the URL of the page. Your browser will automatically open
-# the page, too.
-\dontrun{url <- sdf.visualize(db, c(1, 2))}
-# upload first 20 compounds, disable browsing the page automatically
-url <- sdf.visualize(db, 1:20, browse=FALSE)
-cat(paste("point your browser to ", url, "\n", sep=''))
-# upload the first two compounds, with extra description
-extra <- c("Mark's compound", "Alan's compound")
-names(extra) <- rep("Note", 2)
-\dontrun{url <- sdf.visualize(db, c(1, 2), extra=extra)}
-# upload the first two compound, and use an reference compound
-reference.cmp <- "http://bioweb.ucr.edu/ChemMineV2/compound/Aurora/b32:NNQS2MBRHAZTI===/sdf"
-\dontrun{url <- sdf.visualize(db, c(1, 2), extra=extra, reference.sdf=reference.cmp, reference.note='Reference compound from Aurora library')}
+## Load sample SD file
+data(sdfsample)
+sdfset <- sdfsample
+
+\dontrun{
+## Plot structures using web service ChemMine Tools
+sdf.visualize(sdfset[1:4])
+
+## Add extra annotation as vector
+sdf.visualize(sdfset[1:4], extra=month.name[1:4])
+
+## Add extra annotation as matrix
+extra <- apply(propma[1:4,], 1, function(x) data.frame(Property=colnames(propma), Value=x))
+sdf.visualize(sdfset[1:4], extra=extra)
+
+## Add extra annotation as list
+sdf.visualize(sdfset[1:4], extra=bondblock(sdfset[1:4])) 
+}
 }
 \keyword{utilities}

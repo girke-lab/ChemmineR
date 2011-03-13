@@ -25,9 +25,22 @@ db.subset(db, cmps)
 
 \seealso{\code{\link{cmp.parse}}, \code{\link{sdf.subset}}}
 \examples{
-# load sample database from web
-db <- cmp.parse("http://bioweb.ucr.edu/ChemMineV2/static/example_db.sdf")
-# create a sub-database for the 1st and 2nd compound in that SDF
-db_new <- db.subset(db, c(1, 2))
+## Note: this functionality has become obsolete since the introduction of the 
+## 'apset' S4 class.
+
+## Load sample SD file
+# data(sdfsample); sdfset <- sdfsample
+
+## Generate atom pair descriptor database for searching
+# apset <- sdf2ap(sdfset) 
+
+## Loads same atom pair sample data set provided by library
+data(apset) 
+db <- apset
+olddb <- apset2descdb(db)
+
+## Create a sub-database for the 1st and 2nd compound in that SDF
+db_sub <- db.subset(olddb, c(1, 2))
+
 }
 \keyword{utilities}

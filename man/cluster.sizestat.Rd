@@ -30,11 +30,20 @@ cluster.sizestat(cls, cluster.result=1)
 \author{Y. Eddie Cao}
 \seealso{\code{\link{cmp.cluster}}, \code{\link{cluster.visualize}}}
 \examples{
-# load sample database from web
-db <- cmp.parse("http://bioweb.ucr.edu/ChemMineV2/static/example_db.sdf")
-# cluster it
-clusters <- cmp.cluster(db, cutoff=0.65)
-# statistics on sizes of clusters
-sizestat <- cluster.sizestat(clusters)
+## Load sample SD file
+# data(sdfsample); sdfset <- sdfsample
+
+## Generate atom pair descriptor database for searching
+# apset <- sdf2ap(sdfset) 
+
+## Loads same atom pair sample data set provided by library
+data(apset) 
+
+## Binning clustering using variable similarity cutoffs.
+cluster <- cmp.cluster(db=apset, cutoff = c(0.65, 0.5))
+
+## Statistics on sizes of clusters
+cluster.sizestat(cluster[,c(1,2,3)])
+cluster.sizestat(cluster[,c(1,4,5)])
 }
 \keyword{utilities}

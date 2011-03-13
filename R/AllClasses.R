@@ -19,8 +19,8 @@
 ## Import SD File and Return SDFstr Class (list-like) 
 read.SDFstr <- function(sdfstr) { 
 	mysdf <- readLines(sdfstr) # reads file line-wi se into vector
-        y <- regexpr("[$$$$]", mysdf, perl=TRUE) # identifies all fields that do not start with a '$$$$' sign
-        index <- which(y==1)
+        y <- regexpr("^\\${4,4}", mysdf, perl=TRUE) # identifies all fields that start with a '$$$$' sign
+        index <- which(y!=-1)
         indexDF <- data.frame(start=c(1, index[-length(index)]+1), end=index)
         mysdf_list <- apply(indexDF, 1, function(x) mysdf[seq(x[1], x[2])])
         if(class(mysdf_list) != "list") { mysdf_list <- list(as.vector(mysdf_list))}
@@ -142,7 +142,7 @@ setClass("SDF", representation(header="character", atomblock="matrix", bondblock
 	## Atom block
 	ab2matrix <- function(ct=sdf[index["atom",1]:index["atom",2]]) {
 		if((index["atom","end"] - index["atom","start"]) < 1) {
-                        ctma <- matrix(c(0,0)) # Creates dummy matrix in case there is none.
+                        ctma <- matrix(rep(0,2), 1, 2, dimnames=list("0", c("C1", "C2"))) # Creates dummy matrix in case there is none.
                 } else {
                         ct <- gsub("^ {1,}", "", ct)
 		        ctlist <- strsplit(ct, " {1,}")
@@ -157,8 +157,9 @@ setClass("SDF", representation(header="character", atomblock="matrix", bondblock
 	
 	## Bond block
 	bb2matrix <- function(ct=sdf[index["bond",1]:index["bond",2]]) {
-		if((index["bond","end"] - index["bond","start"]) < 1) {
-                        ctma <- matrix(c(0,0)) # Creates dummy matrix in case there is none.
+		#if((index["bond","end"] - index["bond","start"]) < 1) {
+		if(((index["bond","end"] - index["bond","start"])+1) < 1) {
+                        ctma <- matrix(rep(0,2), 1, 2, dimnames=list("0", c("C1", "C2"))) # Creates dummy matrix in case there is none.
                 } else {
                     ct <- gsub("^(...)(...)(...)(...)(...)(...)(...)", "\\1 \\2 \\3 \\4 \\5 \\6 \\7", ct)
                     ct <- gsub("^ {1,}", "", ct)

@@ -63,13 +63,20 @@ cmp.cluster(db, cutoff, is.similarity = TRUE, save.distances = FALSE,
 \author{Y. Eddie Cao, Li-Chang Cheng}
 \seealso{\code{\link{cmp.parse1}}, \code{\link{cmp.parse}}, \code{\link{cmp.search}}, \code{\link{cmp.similarity}}}
 \examples{
-# load sample database from web
-db <- cmp.parse("http://bioweb.ucr.edu/ChemMineV2/static/example_db.sdf")
-# cluster it
-clusters <- cmp.cluster(db, cutoff=0.65)
-# cluster using multiple cutoffs
+## Load sample SD file
+# data(sdfsample); sdfset <- sdfsample
+
+## Generate atom pair descriptor database for searching
+# apset <- sdf2ap(sdfset) 
+
+## Loads same atom pair sample data set provided by library
+data(apset) 
+db <- apset
+
+## cluster using multiple cutoffs
 clusters <- cmp.cluster(db, cutoff=c(0.5, 0.85))
-# or save the distance before clustering:
+
+## or save the distance before clustering:
 clusters <- cmp.cluster(db, cutoff=0.65, save.distances="distmat.rda")
 # later, you can load the matrix and pass it to do clustering. Load will load
 # the variable 'distmat' that contains the distance matrix
