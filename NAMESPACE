@@ -1,5 +1,5 @@
 ## IMPORTS
-import(methods, graphics, stats)
+import(methods, graphics, stats, RCurl)
 
 ## EXPORTS
 ## S4 Classes
@@ -55,6 +55,10 @@ export(
     ## Fingerprint functions
     ## Source: sim.R
     "fp2bit", "fpSim",
+
+    ## Web Tool functions
+    ## Source: sim.R
+    "getIds", "searchString", "searchSub", "sdf2smiles", "smiles2sdf",
 
     ## Clustering functions
     ## Source: cluster.R

@@ -1058,5 +1058,93 @@ fpSim <- function(x, y) {
 	return(rev(sort(c/(c+a+b))))
 }
 
+######################################
+## Query ChemMine Web Tools Service ##
+######################################
+.serverURL <- "http://chemmine.ucr.edu/ChemmineR/"
 
+# get CIDs from PubChem through ChemMine Web Tools
+getIds <- function(cids) {
+    if(! class(cids) == "numeric"){
+        stop('reference compound ids must be of class \"numeric\"')
+    }
+	cids <- paste(cids, collapse=",")
+	# query server
+	response <- postForm(paste(.serverURL, "runapp?app=getIds", sep=""), cids=cids)[[1]]
+	if(grepl("^ERROR:", response)){
+        stop(response)
+    }
+    if(grepl("linux", sessionInfo()$platform)) {
+        # temporary workaround for linux: save to file with curl and re-open
+        # related to R bug 14533 https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=14533
+        temp <- tempfile()
+        command <- paste("curl", response, ">", temp, "2> /dev/null")
+        system(command)
+        z <- gzcon(file(temp, "rb"))
+        sdf <- read.SDFset(read.SDFstr(z))
+        close(z)
+        unlink(temp)
+    } else {
+        z <- gzcon(url(response))
+        sdf <- read.SDFset(read.SDFstr(z))
+        close(z)
+    }
+	return(sdf)
+}
 
+# search PubChem through ChemMine Web Tools with smiles query
+searchString <- function(smiles) {
+    if(! class(smiles) == "character"){
+        stop('reference compound must be a smiles string of class \"character\"')
+    } 
+    response <- postForm(paste(.serverURL, "runapp?app=searchString", sep=""), smiles=smiles)[[1]]
+    if(grepl("^ERROR:", response)){
+        stop(response)
+    }
+	response <- as.numeric(strsplit(response, ",")[[1]])
+	return(getIds(response))
+}
+
+# search PubChem through ChemMine Web Tools with sdf query
+searchSub <- function(sdf) {
+    if(! class(sdf) == "SDFset"){
+        stop('reference compound must be a compound of class \"SDFset\"')
+    } 
+    smiles <- sdf2smiles(sdf)
+    return(searchString(smiles))
+}
+
+# perform sdf to smiles conversion through ChemMine Web Tools
+sdf2smiles <- function(sdf) {
+    if(! class(sdf) == "SDFset"){
+        stop('reference compound must be a compound of class \"SDFset\"')
+    } 
+	sdf <- sdf2str(sdf[[1]])
+	sdf <- paste(sdf, collapse="\n")
+	response <- postForm(paste(.serverURL, "runapp?app=sdf2smiles", sep=""), sdf=sdf)[[1]]
+	if(grepl("^ERROR:", response)){
+        stop(response)
+    }
+	response <- sub("\n$", "", response) # remove trailing newline
+	id <- sub(".*\t(.*)$", "\\1", response) # get id
+	response <- sub("\t.*$", "", response) # get smiles
+	names(response) <- id
+	return(response)
+}
+
+# perform smiles to sdf conversion through ChemMine Web Tools
+smiles2sdf <- function(smiles) {
+    if(! class(smiles) == "character"){
+        stop('reference compound must be a smiles string of class \"character\"')
+    }
+    if(! is.null(names(smiles))){
+        smiles <- paste(smiles, names(smiles)[1], sep="\t")
+    }
+	response <- postForm(paste(.serverURL, "runapp?app=smiles2sdf", sep=""), smiles=smiles)[[1]]
+	if(grepl("^ERROR:", response)){
+        stop(response)
+    }
+	response <- strsplit(response, "\n")
+	response <- as(as(response, "SDFstr"), "SDFset")
+	return(response)
+}

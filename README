@@ -1,4 +1,7 @@
 changelog
+	version 2.2.14
+		- introduced support for ChemMine Web Tools including PubChem searches
+
         version 2.2.12 - 2.2.13
                 - help file updates
                 - fix for SDF import to support Drug Bank data
