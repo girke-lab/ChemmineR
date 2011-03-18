@@ -1106,7 +1106,7 @@ searchString <- function(smiles) {
 }
 
 # search PubChem through ChemMine Web Tools with sdf query
-searchSub <- function(sdf) {
+searchSim <- function(sdf) {
     if(! class(sdf) == "SDFset"){
         stop('reference compound must be a compound of class \"SDFset\"')
     } 

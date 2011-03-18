@@ -3,6 +3,7 @@
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
 \code{SDFset} to \code{character}
+Convert \code{SDFset} to SMILES (\code{character})
 }
 \description{
 Accepts one compound in an \code{SDFset} container and returns the corresponding
@@ -35,9 +36,10 @@ Tyler Backman
 }
 
 \examples{
+\dontrun{
 ## get a sample compound
 data(sdfsample); sdfset <- sdfsample[1]
 ## convert to smiles
-smiles <- sdf2smiles(sdfset)
+smiles <- sdf2smiles(sdfset)}
 }
 \keyword{ utilities }

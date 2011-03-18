@@ -2,7 +2,7 @@
 \alias{searchString}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-\code{character} to \code{SDFset}
+PubChem Similarity (Fingerprint) SMILES Search 
 }
 \description{
 Accepts one SMILES string (Simplified Molecular Input Line Entry Specification)
@@ -37,8 +37,9 @@ Tyler Backman
 }
 
 \examples{
+\dontrun{
 ## search a compound on PubChem
-compounds <- searchString("CC(=O)OC1=CC=CC=C1C(=O)O")
+compounds <- searchString("CC(=O)OC1=CC=CC=C1C(=O)O")}
 }
 
 \keyword{ utilities }

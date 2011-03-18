@@ -777,6 +777,74 @@ heatmap.2(1-distmat, Rowv=as.dendrogram(hc), Colv=as.dendrogram(hc),
           density.info="none", trace="none")
 @
 
+\section{Searching PubChem}
+\subsection{Get Compounds from PubChem by Id}
+The function \Rfunction{getIds} accepts one or more numeric PubChem compound ids
+and downloads the corresponding compounds from PubChem Power User Gateway (PUG)
+returning results in an \Rclass{SDFset} container. The ChemMine Tools web service
+is used as an intermediate, to translate queries from plain HTTP POST to
+a PUG SOAP query.\\
+
+\noindent Fetch 2 compounds from PubChem:
+
+<<getIds, eval=FALSE, keep.source=TRUE>>=
+compounds <- getIds(c(111,123))
+compounds
+@
+
+\subsection{Search a SMILES Query in PubChem}
+The function \Rfunction{searchString} accepts one SMILES string 
+(Simplified Molecular Input Line Entry Specification)
+and performs a >0.95 similarity PubChem fingerprint search, returning the 
+hits in an \Rclass{SDFset} container. The ChemMine Tools web service
+is used as an intermediate, to translate queries from plain HTTP POST to
+a PubChem Power User Gateway (PUG) query.\\
+
+\noindent Search a SMILES string on PubChem:
+
+<<getIds, eval=FALSE, keep.source=TRUE>>=
+compounds <- searchString("CC(=O)OC1=CC=CC=C1C(=O)O")
+compounds
+@
+
+\subsection{Search an SDF Query in PubChem}
+The function \Rfunction{searchSim} performs a PubChem similarity search just like
+\Rfunction{searchString}, but accepts a query in an \Rclass{SDFset} container.
+If the query contains more than one compound, only the first is searched.\\
+
+\noindent Search an \Rclass{SDFset} container on PubChem:
+
+<<getIds, eval=FALSE, keep.source=TRUE>>=
+data(sdfsample); sdfset <- sdfsample[1]
+compounds <- searchSim(sdfset)
+compounds
+@
+
+\section{Format Interconversions}
+The \Rfunction{sdf2smiles} and \Rfunction{smiles2sdf} functions provide format
+interconversion between SMILES strings (Simplified Molecular Input Line Entry Specification)
+and \Rclass{SDFset} containers. Currently these functions are limited
+to a single compound at a time.\\
+
+\noindent Convert an \Rclass{SDFset} container to a SMILES \Rclass{character} string:
+
+<<sdf2smiles, eval=FALSE, keep.source=TRUE>>=
+data(sdfsample); sdfset <- sdfsample[1]
+smiles <- sdf2smiles(sdfset)
+smiles
+@
+
+\noindent Convert a SMILES \Rclass{character} string to an \Rclass{SDFset} container:
+
+<<smiles2sdf, eval=FALSE, keep.source=TRUE>>=
+sdf <- smiles2sdf("CC(=O)OC1=CC=CC=C1C(=O)O\tname")
+view(sdf)
+@
+
+\noindent These functions require internet connectivity,
+as they rely on the ChemMine Tools web service for conversion
+with the Open Babel Open Source Chemistry Toolbox.
+
 \section{Version Information}
 \markboth{Version Information}{} % Only required to print section title in header field without numbering. 
 <<sessionInfo, eval=TRUE, keep.source=TRUE>>=

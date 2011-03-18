@@ -1,4 +1,9 @@
 changelog
+        version 2.2.15
+                - documentation updates
+		- renamed searchSub() to searchSim()
+		- wrapped web service code in man files with \dontrun{} 
+
 	version 2.2.14
 		- introduced support for ChemMine Web Tools including PubChem searches
 

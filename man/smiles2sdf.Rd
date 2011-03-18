@@ -2,7 +2,7 @@
 \alias{smiles2sdf}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-\code{character} to \code{SDFset}
+Convert SMILES (\code{character}) to \code{SDFset}
 }
 \description{
 Accepts one compound as a
@@ -35,7 +35,8 @@ Tyler Backman
 }
 
 \examples{
+\dontrun{
 ## convert to sdf
-sdf <- smiles2sdf("CC(=O)OC1=CC=CC=C1C(=O)O\tname")
+sdf <- smiles2sdf("CC(=O)OC1=CC=CC=C1C(=O)O\tname")}
 }
 \keyword{ utilities }

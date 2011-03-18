@@ -2,7 +2,7 @@
 \alias{getIds}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-numeric to \code{SDFset}
+Import Compounds from PubChem
 }
 \description{
 Accepts one or more PubChem compound ids
@@ -35,8 +35,9 @@ Tyler Backman
 }
 
 \examples{
+\dontrun{
 ## fetch 2 compounds from PubChem
-compounds <- getIds(c(111,123))
+compounds <- getIds(c(111,123))}
 }
 
 \keyword{ utilities }

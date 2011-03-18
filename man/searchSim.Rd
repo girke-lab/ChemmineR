@@ -1,8 +1,8 @@
-\name{searchSub}
-\alias{searchSub}
+\name{searchSim}
+\alias{searchSim}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-\code{SDFset} to \code{SDFset}
+PubChem Similarity (Fingerprint) Search 
 }
 \description{
 Accepts one \code{SDFset} container
@@ -13,7 +13,7 @@ a PubChem Power User Gateway (PUG) query. If the input object
 contains multiple items, only the first is used as a query.
 }
 \usage{
-searchSub(sdf)
+searchSim(sdf)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -38,10 +38,11 @@ Tyler Backman
 }
 
 \examples{
+\dontrun{
 ## get a sample compound
 data(sdfsample); sdfset <- sdfsample[1]
 ## search a compound on PubChem
-compounds <- searchSub(sdfset)
+compounds <- searchSim(sdfset)}
 }
 
 \keyword{ utilities }
