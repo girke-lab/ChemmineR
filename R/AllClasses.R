@@ -852,11 +852,43 @@ splitNumChar <- function(blockmatrix=blockmatrix) {
 # Usage:
 # numchar <- splitNumChar(blockmatrix=blockmatrix)
 
+#############################
+## (5.5) Connection Tables ##
+#############################
+
+## (5.5.1) Generate connection matrix from SDFset or SDF objects
+conMA <- function(x, exclude="none") {
+        ## Function for SDF object 
+        .conMA <- function(x, exclude=exclude) {
+            atoms <- rownames(atomblock(x))
+            conma <- matrix(0, length(atoms), length(atoms), dimnames=list(atoms, atoms))
+            bondblock <- bondblock(x)
+            for(i in seq(along=bondblock[,1])) conma[bondblock[i,1], bondblock[i,2]] <- bondblock[i,3]
+            for(i in seq(along=bondblock[,1])) conma[bondblock[i,2], bondblock[i,1]] <- bondblock[i,3]
+            index <- !gsub("_.*", "", rownames(conma)) %in% exclude
+            conma <- conma[index,index]
+            return(conma)
+        }   
+        ## Run on SDF objects
+        if(class(x)=="SDF") {
+                conma <- .conMA(x, exclude)
+                return(conma)
+        }
+        ## Run on SDFset objects containing one or many molecules
+        if(class(x)=="SDFset") {
+                conma_set <- lapply(seq(along=x), function(y) .conMA(x[[y]], exclude))
+                names(conma_set) <- cid(x)
+                return(conma_set)
+        }
+}
+# Usage:
+# conma <- conMA(sdfset[1:2], exclude=c("H"))
+
 #################################
-## (5.5.) String Search Method ##
+## (5.6) String Search Method ##
 #################################
 
-## (5.5.1) String search function for SDFset
+## (5.6.1) String search function for SDFset
 grepSDFset <- function(pattern, x, field="datablock", mode="subset", ignore.case=TRUE, ...) {
 	## Generate search vector and index for desired field in SDFset
 	if(field=="header" | field==1) {

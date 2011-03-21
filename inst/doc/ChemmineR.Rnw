@@ -382,7 +382,7 @@ mylog <- cid(sdfset) %in% c("650001", "650012")
 view(sdfset[mylog])
 @
 
-\noindent Accessing \Rclass{SDF/SDFset} components: header, atom, bond and data blocks
+\noindent Accessing \Rclass{SDF/SDFset} components: header, atom, bond and data blocks:
 <<eval=FALSE, keep.source=TRUE>>=
 atomblock(sdf); sdf[[2]]; sdf[["atomblock"]] 
    # All three methods return the same component
@@ -394,6 +394,11 @@ header(sdfset[[1]])
 atomblock(sdfset[[1]])
 bondblock(sdfset[[1]])
 datablock(sdfset[[1]])
+@
+
+\noindent Create connection tables:
+<<eval=FALSE, keep.source=TRUE>>=
+conMA(sdfset[1:2], exclude=c("H"))
 @
 
 \noindent Replacement Methods:
