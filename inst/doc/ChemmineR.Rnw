@@ -396,11 +396,6 @@ bondblock(sdfset[[1]])
 datablock(sdfset[[1]])
 @
 
-\noindent Create connection tables:
-<<eval=FALSE, keep.source=TRUE>>=
-conMA(sdfset[1:2], exclude=c("H"))
-@
-
 \noindent Replacement Methods:
 <<eval=FALSE, keep.source=TRUE>>=
 sdfset[[1]][[2]][1,1] <- 999
@@ -478,6 +473,21 @@ numchar <- splitNumChar(blockmatrix=blockmatrix)
    # Splits matrix to numeric matrix and character matrix
 numchar[[1]][1:4,]; numchar[[2]][1:4,] 
    # Splits matrix to numeric matrix and character matrix
+.
+@
+
+\section{Connection Tables}
+\markboth{Connection Tables}{} % Only required to print section title in header field without numbering. 
+\noindent Connection tables of compounds provide an efficient data structure for many basic computations on small molecules. The function \Rfunction{conMA} creates this data structure from \Rclass{SDF} and \Rclass{SDFset} objects. The resulting connection matrix contains the atom labels in the row/column titles and the bond types in the data part. The labels are defined as follows: 0 is no conntection, 1 is a single bond, 2 is a double bond and 3 is a triple bond.
+<<contable, eval=FALSE, fig=FALSE, keep.source=TRUE>>=
+conMA(sdfset[1:2], exclude=c("H"))
+   # Create connection matrix for first two molecules in sdfset
+conMA(sdfset[[1]], exclude=c("H"))
+   # Return connection matrix for first molecule
+plot(sdfset[1], atomnum = TRUE, noHbonds=FALSE , no_print_atoms = "", atomcex=0.8)
+   # Plot its structure with atom numbering
+rowSums(conMA(sdfset[[1]], exclude=c("H")))
+   # Return number of non-H bonds for each atom
 .
 @
 

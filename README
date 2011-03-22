@@ -1,4 +1,8 @@
 changelog
+        version 2.2.16 - 2.2.18
+                - Added conMA function to create connection matrices
+                - Documentation updates
+
         version 2.2.15
                 - documentation updates
 		- renamed searchSub() to searchSim()
@@ -10,7 +14,7 @@ changelog
         version 2.2.12 - 2.2.13
                 - help file updates
                 - fix for SDF import to support Drug Bank data
-        
+	
         version 2.2.0 - 2.2.11
 		- added support for PubChem fingerprints
 	

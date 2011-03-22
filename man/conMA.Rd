@@ -4,7 +4,7 @@
 Connection Table
 }
 \description{
-Create connection matrix from \code{SDF} and \code{SDFset} objects.
+Creates a connection matrix from \code{SDF} and \code{SDFset} objects. The matrix contains the atom labels in the row and column titles and the bond types are given in the data part as follows: 0 is no connection, 1 is a single bond, 2 is a double bond and 3 is a triple bond.
 }
 \usage{
 conMA(x, exclude = "none")
@@ -14,7 +14,7 @@ conMA(x, exclude = "none")
 \code{SDF} or \code{SDFset} containers
 }
   \item{exclude}{
-if \code{exclude="none"}, then all atoms will be considered in the resulting connection table; if \code{exclude=c("H")}; then H atoms will be excluded. Argument supports any number of atoms.
+if \code{exclude="none"}, then all atoms will be considered in the resulting connection table; if \code{exclude=c("H")}, then the H atoms will be excluded. Any number of atom labels to be excluded can be passed on to this argument in form of a \code{character} vector.
 }
 }
 \details{
@@ -40,5 +40,11 @@ sdfset <- sdfsample
 ## Create connection matrix for first two molecules in sdfset
 conMA(sdfset[1:2], exclude=c("H"))
 
+## Return connection matrix for first molecule and plot its structure with atom numbering
+conMA(sdfset[[1]], exclude=c("H"))
+plot(sdfset[1], atomnum = TRUE, noHbonds=FALSE , no_print_atoms = "", atomcex=0.8)
+
+## Return number of non-H bonds for each atom 
+rowSums(conMA(sdfset[[1]], exclude=c("H")))
 }
 \keyword{ utilities }

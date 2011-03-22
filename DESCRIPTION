@@ -1,8 +1,8 @@
 Package: ChemmineR
 Type: Package
 Title: Analysis of Small Molecule and Screening Data
-Version: 2.2.17
-Date: 2011-3-18
+Version: 2.2.18
+Date: 2011-3-22
 Author: Y. Eddie Cao, Tyler Backman, Yan Wang, Thomas Girke
 Maintainer: ChemmineR Team <see@url>
 Description: ChemmineR is an R package for analyzing small molecule and screening data. The new version of the package 'ChemmineR-V2' contains efficient functions and data containers for processing SDFs (structure data files), structural similarity searching, clustering/diversity analyses of compound libraries with a wide spectrum of algorithms. In addition, it offers utilities for managing complex data sets from high-throughput compound bio-assays, and visualization functions for clustering results and chemical structures.
