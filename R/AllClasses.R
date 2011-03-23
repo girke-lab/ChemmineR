@@ -852,11 +852,11 @@ splitNumChar <- function(blockmatrix=blockmatrix) {
 # Usage:
 # numchar <- splitNumChar(blockmatrix=blockmatrix)
 
-#############################
-## (5.5) Connection Tables ##
-#############################
+#########################
+## (5.5) Bond Matrices ##
+#########################
 
-## (5.5.1) Generate connection matrix from SDFset or SDF objects
+## (5.5.1) Generate bond matrix from SDFset or SDF objects
 conMA <- function(x, exclude="none") {
         ## Function for SDF object 
         .conMA <- function(x, exclude=exclude) {

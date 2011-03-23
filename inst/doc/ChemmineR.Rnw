@@ -435,13 +435,20 @@ as(sdfset[1:4], "SDFstr")
 \section{Molecular Property Functions}
 \markboth{Molecular Property Functions}{} % Only required to print section title in header field without numbering. 
 \noindent Several methods and functions are available to compute basic compound descriptors, such as molecular formula (MF), molecular weigth (MW) and atom frequencies. 
-<<boxplot, eval=FALSE, fig=TRUE, keep.source=TRUE>>=
+
+<<boxplot, eval=TRUE, fig=TRUE, keep.source=TRUE>>=
 propma <- atomcountMA(sdfset)
 boxplot(propma, col="blue", main="Atom Frequency")
 @
 
 <<eval=FALSE, keep.source=TRUE>>=
 boxplot(rowSums(propma), main="All Atom Frequency")   
+@
+
+\noindent Data frame provided by library containing atom names, atom symbols, standard atomic weights, group and period numbers:
+<<eval=TRUE, keep.source=TRUE>>=
+data(atomprop)
+atomprop[1:4,] 
 @
 
 \noindent Compute MW and formula:
@@ -476,14 +483,14 @@ numchar[[1]][1:4,]; numchar[[2]][1:4,]
 .
 @
 
-\section{Connection Tables}
-\markboth{Connection Tables}{} % Only required to print section title in header field without numbering. 
-\noindent Connection tables of compounds provide an efficient data structure for many basic computations on small molecules. The function \Rfunction{conMA} creates this data structure from \Rclass{SDF} and \Rclass{SDFset} objects. The resulting connection matrix contains the atom labels in the row/column titles and the bond types in the data part. The labels are defined as follows: 0 is no conntection, 1 is a single bond, 2 is a double bond and 3 is a triple bond.
+\section{Bond Matrices}
+\markboth{Bond Matrices}{} % Only required to print section title in header field without numbering. 
+\noindent Bond matrices provide an efficient data structure for many basic computations on small molecules. The function \Rfunction{conMA} creates this data structure from \Rclass{SDF} and \Rclass{SDFset} objects. The resulting bond matrix contains the atom labels in the row/column titles and the bond types in the data part. The labels are defined as follows: 0 is no connection, 1 is a single bond, 2 is a double bond and 3 is a triple bond.
 <<contable, eval=FALSE, fig=FALSE, keep.source=TRUE>>=
 conMA(sdfset[1:2], exclude=c("H"))
-   # Create connection matrix for first two molecules in sdfset
+   # Create bond matrix for first two molecules in sdfset
 conMA(sdfset[[1]], exclude=c("H"))
-   # Return connection matrix for first molecule
+   # Return bond matrix for first molecule
 plot(sdfset[1], atomnum = TRUE, noHbonds=FALSE , no_print_atoms = "", atomcex=0.8)
    # Plot its structure with atom numbering
 rowSums(conMA(sdfset[[1]], exclude=c("H")))

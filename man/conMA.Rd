@@ -1,10 +1,10 @@
 \name{conMA}
 \alias{conMA}
 \title{
-Connection Table
+Bond Matrices
 }
 \description{
-Creates a connection matrix from \code{SDF} and \code{SDFset} objects. The matrix contains the atom labels in the row and column titles and the bond types are given in the data part as follows: 0 is no connection, 1 is a single bond, 2 is a double bond and 3 is a triple bond.
+Creates a bond matrix from \code{SDF} and \code{SDFset} objects. The matrix contains the atom labels in the row and column titles and the bond types are given in the data part as follows: 0 is no connection, 1 is a single bond, 2 is a double bond and 3 is a triple bond.
 }
 \usage{
 conMA(x, exclude = "none")
@@ -21,7 +21,7 @@ if \code{exclude="none"}, then all atoms will be considered in the resulting con
 ...
 }
 \value{
-If \code{x} is of class \code{SDF}, then a single connection \code{matrix} is returned. If \code{x} is of class \code{SDFset}, then a \code{list} of matrices is returned that has the same length as \code{x}.
+If \code{x} is of class \code{SDF}, then a single bond \code{matrix} is returned. If \code{x} is of class \code{SDFset}, then a \code{list} of matrices is returned that has the same length as \code{x}.
 }
 \references{
 ...
@@ -37,10 +37,10 @@ Class: \code{SDF} and \code{SDFset}
 data(sdfsample)
 sdfset <- sdfsample
 
-## Create connection matrix for first two molecules in sdfset
+## Create bond matrix for first two molecules in sdfset
 conMA(sdfset[1:2], exclude=c("H"))
 
-## Return connection matrix for first molecule and plot its structure with atom numbering
+## Return bond matrix for first molecule and plot its structure with atom numbering
 conMA(sdfset[[1]], exclude=c("H"))
 plot(sdfset[1], atomnum = TRUE, noHbonds=FALSE , no_print_atoms = "", atomcex=0.8)
 
