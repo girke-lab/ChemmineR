@@ -824,7 +824,7 @@ datablock2ma <- function(datablocklist=datablock(sdfset), cleanup=" \\(.*", ...)
 	rownames(myMA) <- names(datablocklist)
 	return(myMA)
 }
-# Usage:
+# Usage:   
 # blockmatrix <- datablock2ma(datablocklist=datablock(sdfset))
 
 ## (5.4.2) Split SDF tail matrix into character and numeric matrices
