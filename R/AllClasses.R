@@ -209,11 +209,14 @@ setGeneric(name="sdfid", def=function(x, tag=1) standardGeneric("sdfid"))
 setMethod(f="sdfid", signature="SDF", definition=function(x, tag=1) {return(x@header[tag])}) 
 setGeneric(name="atomblock", def=function(x) standardGeneric("atomblock"))
 setMethod(f="atomblock", signature="SDF", definition=function(x) {return(x@atomblock)}) 
-setGeneric(name="atomcount", def=function(x) standardGeneric("atomcount"))
-setMethod(f="atomcount", signature="SDF", definition=function(x) {
-	atomcount <- table(gsub("_.*", "", rownames(x@atomblock)))
-	return(atomcount)
-}) 
+setGeneric(name="atomcount", def=function(x, addH=FALSE, ...) standardGeneric("atomcount"))
+setMethod(f="atomcount", signature="SDF", definition=function(x, addH=FALSE, ...) {
+	if(addH==TRUE) { 
+		return(table(c(gsub("_.*", "", rownames(x@atomblock)), rep("H", bonds(x, type="addNH")))))
+	} else {
+		return(table(gsub("_.*", "", rownames(x@atomblock))))
+	}
+})
 setGeneric(name="bondblock", def=function(x) standardGeneric("bondblock"))
 setMethod(f="bondblock", signature="SDF", definition=function(x) {return(x@bondblock)}) 
 setGeneric(name="datablock", def=function(x) standardGeneric("datablock"))
@@ -344,7 +347,10 @@ setMethod(f="sdfid", signature="SDFset", definition=function(x, tag=1) {return(a
 setGeneric(name="cid", def=function(x) standardGeneric("cid"))
 setMethod(f="cid", signature="SDFset", definition=function(x) {return(x@ID)}) 
 setMethod(f="atomblock", signature="SDFset", definition=function(x) {return(lapply(SDFset2SDF(x), atomblock))}) 
-setMethod(f="atomcount", signature="SDFset", definition=function(x) {return(lapply(SDFset2SDF(x), atomcount))}) 
+setMethod(f="atomcount", signature="SDFset", definition=function(x, addH, ...) {
+	atomcounts <- lapply(SDFset2SDF(x), function(y) atomcount(y, addH, ...))
+	return(atomcounts)
+}) 
 setMethod(f="bondblock", signature="SDFset", definition=function(x) {return(lapply(SDFset2SDF(x), bondblock))}) 
 setMethod(f="datablock", signature="SDFset", definition=function(x) {return(lapply(SDFset2SDF(x), datablock))}) 
 setMethod(f="datablocktag", signature="SDFset", definition=function(x, tag) {return(as.vector(sapply(SDFset2SDF(x), datablocktag, tag)))}) 
@@ -740,11 +746,12 @@ apset2descdb <- function(apset) {
 #################################################
 ## (5.1) Detect Invalid SDFs in SDFset Objects ##
 #################################################
-validSDF <- function(x) {
+validSDF <- function(x, Nabcol = 3, Nbbcol = 3, logic="&") {
         if(class(x)!="SDFset") warning("x needs to be of class SDFset")
 	ab <- atomblock(x); abcol <- sapply(names(ab), function(x) length(ab[[x]][1,]))
         bb <- bondblock(x); bbcol <- sapply(names(bb), function(x) length(bb[[x]][1,]))
-        validsdf <- abcol >= 3 | bbcol >= 3
+        if(logic=="|") { validsdf <- abcol >= Nabcol | bbcol >= Nbbcol }
+	if(logic=="&") { validsdf <- abcol >= Nabcol & bbcol >= Nbbcol }
         return(validsdf)
 }
 
@@ -770,9 +777,9 @@ makeUnique <- function(x, silent=FALSE) {
 ## (5.3) Molecule Properties ##
 ###############################
 ## (5.3.1) Atom count matrix
-atomcountMA <- function(x) {
+atomcountMA <- function(x, ...) {
         if(class(x)=="SDF") x <- as(x, "SDFset")
-	atomcountlist <- atomcount(x) 	
+	atomcountlist <- atomcount(x, ...) 	
 	columns <- unique(unlist(lapply(seq(along=atomcountlist), function(x) names(atomcountlist[[x]]))))
         myMA <- matrix(NA, length(atomcountlist), length(columns), dimnames=list(NULL, columns))
         for(i in seq(along=atomcountlist)) myMA[i, names(atomcountlist[[i]])] <- atomcountlist[[i]]
@@ -783,21 +790,21 @@ atomcountMA <- function(x) {
 
 ## (5.3.2) Molecular weight (MW data from http://iupac.org/publications/pac/78/11/2051/)
 data(atomprop); atomprop <- atomprop # Import MW data frame from /data into workspace.
-MW <- function(x, mw=atomprop) {
+MW <- function(x, mw=atomprop, ...) {
         if(class(x)=="SDF") x <- as(x, "SDFset")
 	## Create MW vector with atom symbols in name slot
 	AW <- mw$Atomic_weight; names(AW) <- mw$Symbol
 	
 	## Calculate MW
-	propma <- atomcountMA(x)
-	MW <- rowSums(t(t(propma) * AW[colnames(propma)])) 
+	propma <- atomcountMA(x, ...)
+	MW <- rowSums(t(t(propma) * AW[colnames(propma)]), na.rm = TRUE) 
 	return(MW)
 }
 
 ## (5.3.3) Molecular formula
-MF <- function(x) {
+MF <- function(x, ...) {
         if(class(x)=="SDF") x <- as(x, "SDFset")
-	propma <- atomcountMA(x)
+	propma <- atomcountMA(x, ...)
 	propma <- propma[c(1, seq(along=propma[,1])),] # Duplicates first row to support processing of single molecule with same code
 	hillorder <- colnames(propma); names(hillorder) <- hillorder
 	hillorder <- na.omit(unique(hillorder[c("C", "H", sort(hillorder))]))
@@ -806,10 +813,10 @@ MF <- function(x) {
 	MF <- paste(colnames(propma), t(propma), sep="")
 	propma <- matrix(MF, nrow=length(propma[,1]), ncol=length(propma[1,]), dimnames=list(rownames(propma), colnames(propma)), byrow=TRUE)
 	MF <- seq(along=propma[,1]); names(MF) <- rownames(propma)
-	zeroma <- matrix(grepl("[A-Za-z]0$", propma), nrow=length(propma[,1]), ncol=length(propma[1,]), dimnames=list(rownames(propma), colnames(propma)))
+	zeroma <- matrix(grepl("[\\*A-Za-z]0$", propma), nrow=length(propma[,1]), ncol=length(propma[1,]), dimnames=list(rownames(propma), colnames(propma)))
 	propma[zeroma] <- ""
 	for(i in seq(along=MF)) { MF[i] <-  paste(propma[i,], collapse="") }
-	return(MF[-1]) # Minus one to remove duplicated entry in first row of propma.
+	return(MF[-1]) # Minus one to remove duplicated entry in first row of propma
 }
 
 ##############################################################
@@ -883,6 +890,79 @@ conMA <- function(x, exclude="none") {
 }
 # Usage:
 # conma <- conMA(sdfset[1:2], exclude=c("H"))
+
+## (5.5.2) Compute bond/charge count for each atom in SDFset or SDF objects
+## This is used to add hydrogens with methods/functions atomcount, atomcountMA, MW and MF
+bonds <- function(x, type="bonds") {
+	## Input checks
+        if(!any(c("SDF", "SDFset") %in% class(x))) stop("x needs to be of class SDF or SDFset")
+	if(!any(c("bonds", "charge", "addNH") %in% type)) stop("type can only be assigned: bonds, charge or addNH") 
+	
+	## Compute bonds, charges and missing hydrogens
+	.bonds <- function(x, type=type) {
+		atomMA <- atomblock(x)
+		atoms <- gsub("_.*", "", rownames(atomMA))
+		bondMA <- bondblock(x)
+		Nbonds1 <- cbind(atoms=c(bondMA[,1], bondMA[,2]), bonds=c(bondMA[,3], bondMA[,"C3"]))
+		Nbonds1 <- tapply(Nbonds1[, "bonds"], Nbonds1[, "atoms"], sum)
+		Nbonds <- rep(0, length(atomMA[,1])); names(Nbonds) <- seq(along=atomMA[,1]); Nbonds[names(Nbonds1)] <- Nbonds1 	
+		
+		## Valence related to position in periodic table (following octet rule) 
+		val <- c("1"=1, "17"=1, "2"=2, "16"=2, "13"=3, "15"=3, "14"=4)
+		group <- as.numeric(atomprop$Group); names(group) <- as.character(atomprop$Symbol)
+		Nbondrule <- val[as.character(group[atoms])]
+		Nbondrule[is.na(Nbondrule)] <- 0 # Atoms with undefined Nbondrule (NAs) are assigned zero
+		Nbondrule[Nbondrule < Nbonds] <- Nbonds[Nbondrule < Nbonds] # Set Nbondrule to Nbonds values, where latter is larger 
+
+		## Charges
+		charge <- c("0"=0, "1"=3, "2"=2, "3"=1, "4"=0, "5"=-1, "6"=-2, "7"=-3) # 4 is "doublet_radical"
+		charge <- charge[as.character(atomMA[,5])]
+		Nbonds <- data.frame(atom=atoms, Nbondcount=Nbonds, Nbondrule=Nbondrule, charge=charge) 
+		
+		## Data type to return
+		if(type=="bonds") { return(Nbonds) }
+		if(type=="charge") {
+			chargeindex <- Nbonds[, "charge"] != 0 
+			if(sum(chargeindex) == 0) {
+				return(NULL)
+			} else {
+				chargeDF <- Nbonds[chargeindex, ]
+				charge <- chargeDF[, "charge"]
+				names(charge) <- chargeDF[, "atom"] 
+				return(charge)
+			}
+		}
+		if(type=="addNH") { 
+			Nbonds[Nbonds[,"Nbondcount"] >= Nbonds[,"Nbondrule"], "charge"] <- 0 # Ignore charge where Nbondcount greater or equal than Nbondrule
+			Nbonds[Nbonds[,"Nbondcount"] == 0, c("Nbondrule", "charge")] <- 0 # Ignore atoms with zero bonds
+			NH <- sum((Nbonds[, "Nbondrule"] + Nbonds[, "charge"]) - Nbonds[, "Nbondcount"])
+			if(NH < 0) NH <- 0 # Count should not be negative
+			return(NH) 
+		}
+	}
+        ## Run on SDF objects
+        if(class(x)=="SDF") {
+                bonds <- .bonds(x, type)
+                return(bonds)
+        }
+        ## Run on SDFset objects containing one or many molecules
+        if(class(x)=="SDFset") {
+                bonds_set <- lapply(seq(along=x), function(y) .bonds(x[[y]], type))
+                names(bonds_set) <- cid(x)
+		if(type=="bonds") {
+                	return(bonds_set)
+		}
+		if(type=="charge") {
+                	return(bonds_set)
+		}
+		if(type=="addNH") {
+                	return(unlist(bonds_set))
+		}
+        }
+}
+# Usage:
+# bondDF <- bonds(sdfset[1], type="df")) 
+# bondcount <- bonds(sdfset[1], type="addNH")) 
 
 #################################
 ## (5.6) String Search Method ##

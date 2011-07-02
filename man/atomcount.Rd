@@ -10,13 +10,13 @@ Molecular property functions
 Functions to compute molecular properties: weight, formula, atom frequencies, etc. 
 }
 \usage{
-atomcount(x)
+atomcount(x, addH = FALSE, ...)
 
-atomcountMA(x)
+atomcountMA(x, ...)
 
-MW(x, mw=atomprop)
+MW(x, mw=atomprop, ...)
 
-MF(x)
+MF(x, ...)
 }
 \arguments{
 \item{x}{
@@ -24,6 +24,12 @@ object of class \code{SDFset} or \code{SDF}
 }
 \item{mw}{
 \code{data.frame} with atomic weights; imported by default with data(atomprop); supports custom data sets
+}
+\item{addH}{
+'addH = TRUE' should be passed on to any of these function to add hydrogens that are often not specified in SD files
+}
+\item{\dots}{
+Arguments to be passed to/from other methods.
 }
 }
 \details{
@@ -50,11 +56,11 @@ Functions: \code{datablock}, \code{datablocktag}
 data(sdfsample)
 sdfset <- sdfsample
 
-## Compute properties
-MW(sdfset[1:4])
-MF(sdfset[1:4])
-atomcount(sdfset[1:4])
-propma <- atomcountMA(sdfset[1:4])
+## Compute properties; to consider missing hydrogens, set 'addH = TRUE'
+MW(sdfset[1:4], addH = FALSE)
+MF(sdfset[1:4], addH = FALSE)
+atomcount(sdfset[1:4], addH = FALSE)
+propma <- atomcountMA(sdfset[1:4], addH = FALSE)
 boxplot(propma, main="Atom Frequency")
 
 ## Example for injecting a custom matrix/data frame into the data block of an

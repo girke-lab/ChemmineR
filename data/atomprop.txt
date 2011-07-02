@@ -119,3 +119,4 @@ Number	Name	Symbol	Atomic_weight	Group	Period
 115	ununpentium	Uup	NA	15	7
 116	ununhexium	Uuh	NA	16	7
 118	ununoctium	Uuo	NA	18	7
+119	wildcard	*	0	1	8

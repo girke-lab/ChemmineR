@@ -30,6 +30,8 @@ If \code{x} is of class \code{SDF}, then a single bond \code{matrix} is returned
 Thomas Girke
 }
 \seealso{
+Functions: \code{bonds}
+
 Class: \code{SDF} and \code{SDFset}
 }
 \examples{

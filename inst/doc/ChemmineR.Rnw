@@ -1,5 +1,6 @@
 % Manual compile
 % Sweave("ChemmineR.Rnw"); system("pdflatex ChemmineR.tex; bibtex ChemmineR; pdflatex ChemmineR.tex; pdflatex ChemmineR.tex")
+% echo 'Sweave("ChemmineR.Rnw")' | R --slave; echo 'Stangle("ChemmineR.Rnw")' | R --slave; pdflatex ChemmineR.tex;  bibtex ChemmineR; pdflatex ChemmineR.tex
 % NOTE -- ONLY EDIT THE .Rnw FILE!!!  The .tex file is
 % likely to be overwritten.
 %
@@ -434,10 +435,10 @@ as(sdfset[1:4], "SDFstr")
 
 \section{Molecular Property Functions}
 \markboth{Molecular Property Functions}{} % Only required to print section title in header field without numbering. 
-\noindent Several methods and functions are available to compute basic compound descriptors, such as molecular formula (MF), molecular weigth (MW) and atom frequencies. 
+\noindent Several methods and functions are available to compute basic compound descriptors, such as molecular formula (MF), molecular weigth (MW) and atom frequencies. In all these function, it is important to set \Rfunarg{addH=TRUE} in order to include/add hydrogens that are often not specified in an SD file.
 
 <<boxplot, eval=TRUE, fig=TRUE, keep.source=TRUE>>=
-propma <- atomcountMA(sdfset)
+propma <- atomcountMA(sdfset, addH=FALSE)
 boxplot(propma, col="blue", main="Atom Frequency")
 @
 
@@ -453,8 +454,9 @@ atomprop[1:4,]
 
 \noindent Compute MW and formula:
 <<eval=FALSE, keep.source=TRUE>>=
-MW(sdfset[1:4]); MF(sdfset[1:4])
-propma <- data.frame(MF=MF(sdfset), MW=MW(sdfset), atomcountMA(sdfset)); propma[1:4,]
+MW(sdfset[1:4], addH=FALSE); MF(sdfset[1:4], addH=FALSE)
+propma <- data.frame(MF=MF(sdfset, addH=FALSE), MW=MW(sdfset, addH=FALSE), 
+                     atomcountMA(sdfset, addH=FALSE)); propma[1:4,]
 datablock(sdfset) <- propma # Works with all SDF components
 test <- apply(propma[1:4,], 1, function(x) data.frame(col=colnames(propma), value=x))
 sdf.visualize(sdfset[1:4], extra = test)
@@ -496,6 +498,12 @@ plot(sdfset[1], atomnum = TRUE, noHbonds=FALSE , no_print_atoms = "", atomcex=0.
 rowSums(conMA(sdfset[[1]], exclude=c("H")))
    # Return number of non-H bonds for each atom
 .
+@
+\noindent The function \Rfunction{bonds} provides related information. If \Rfunarg{type="bonds"}, a data frame is returned with bonds and charges, if \Rfunarg{type="charge"}, all charged atoms are returned and if \Rfunarg{type="addNH"} the number of missing hydrogens are returned for each molecule. 
+<<eval=TRUE, keep.source=TRUE>>=
+bonds(sdfset[[1]], type="bonds")[1:4,]
+bonds(sdfset[1:2], type="charge")
+bonds(sdfset[1:2], type="addNH")
 @
 
 \section{Rendering Chemical Structure Images}

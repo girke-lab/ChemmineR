@@ -1,4 +1,8 @@
 changelog
+	version 2.4.1 - 2.4.2
+		- Utilities for adding missing hydrogens: includes new 'bonds' function
+                  that is used by functions 'atomcount', 'MW', 'MF', 'atomcountMA'
+		
         version 2.2.16 - 2.2.18
                 - Added conMA function to create connection matrices
                 - Documentation updates
