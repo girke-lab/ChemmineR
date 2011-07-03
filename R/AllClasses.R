@@ -1022,14 +1022,17 @@ grepSDFset <- function(pattern, x, field="datablock", mode="subset", ignore.case
 ##########################
 ## Plot single CMP Structure
 plotStruc <- function(sdf, atomcex=1.2, atomnum=FALSE, no_print_atoms=c("C"), noHbonds=TRUE, bondspacer=0.12, ...) {
-	toplot <- list(atomblock=atomblock(sdf)[,1:2], bondblock=bondblock(sdf)[,1:3])
+        toplot <- list(atomblock=cbind(atomblock(sdf)[,c(1:2)], as.matrix(bonds(sdf, type="bonds")[,-1])), bondblock=bondblock(sdf)[,1:3])
 	## Create empty plot with proper dimensions
 	plot(toplot[[1]], type="n", axes=F, xlab="", ylab="", ...)
 	## Remove C-hydrogens including their bonds 
 	if(noHbonds==TRUE) {
-		CHbondindex <- sapply(seq(toplot[[2]][,1]), function(x) paste(sort(gsub("_.*", "", rownames(toplot[[1]]))[toplot[[2]][x,1:2]]), collapse="") == "CH")
+		nonbonded <- !1:length(toplot[[1]][,1]) %in% sort(unique(as.vector(toplot[[2]][,1:2])))
+                nonbonded <- as.data.frame(toplot[[1]])[nonbonded,]
+                CHbondindex <- sapply(seq(toplot[[2]][,1]), function(x) paste(sort(gsub("_.*", "", rownames(toplot[[1]]))[toplot[[2]][x,1:2]]), collapse="") == "CH")
 		toplot[[1]] <- toplot[[1]][sort(unique(as.numeric(toplot[[2]][!CHbondindex,1:2]))), ]
-		toplot[[2]] <- toplot[[2]][!CHbondindex,] 
+		toplot[[2]] <- toplot[[2]][!CHbondindex,]
+                toplot[[1]] <- as.matrix(rbind(toplot[[1]], nonbonded))
 	}	
 	## Plot bonds
 	for(i in seq(along=toplot[[2]][,1])) {
@@ -1056,17 +1059,26 @@ plotStruc <- function(sdf, atomcex=1.2, atomnum=FALSE, no_print_atoms=c("C"), no
 	}
 	## Exclude certain atoms from being printed
 	exclude <- paste("(^", no_print_atoms, "_)", sep="", collapse="|")
-	labelMA <- toplot[[1]][!grepl(exclude, rownames(toplot[[1]])), ] 
-	if(is.vector(labelMA)) labelMA <- matrix(labelMA, 1, 2, byrow=TRUE, dimnames=list(rownames(toplot[[1]])[!grepl(exclude, rownames(toplot[[1]]))], c("C1", "C2")))
+	labelMA <- toplot[[1]][!grepl(exclude, rownames(toplot[[1]])), ]
+        ## Add charges 
+	charge <- c("0"="", "3"="3+", "2"="2+", "1"="+", "-1"="-", "-2"="2-", "-3"="3-")
+        charge <- charge[as.character(labelMA[,"charge"])]
+        ## Add hydrogens to non-charged/non-C atoms according to valence rules (some SD files require this)
+        Nhydrogens <- c("0"="", "1"="H", "2"="H2", "3"="H3", "4"="H4", "5"="H5", "6"="H6", "7"="H7", "8"="H8") 
+        hydrogens <- (labelMA[, "Nbondrule"] + labelMA[, "charge"]) - labelMA[,"Nbondcount"]
+        hydrogens[labelMA[,"charge"]!=0] <- 0; hydrogens[hydrogens < 0] <- 0
+        hydrogens <- Nhydrogens[as.character(hydrogens)]
+        ## Plot data
+        if(is.vector(labelMA)) labelMA <- matrix(labelMA, 1, 2, byrow=TRUE, dimnames=list(rownames(toplot[[1]])[!grepl(exclude, rownames(toplot[[1]]))], c("C1", "C2")))
 	if(is.matrix(labelMA) & length(labelMA[,1])>=1) {
 		atomcol <- gsub("_.*", "", rownames(labelMA)); atomcol[!grepl("N|C|O|H", atomcol)] <- "any"; mycol <- c(C="black", H="black", N="blue", O="red", any="green"); atomcol <- mycol[atomcol]
 		## Overplot nodes to display atom labels
 		points(x=labelMA[,1], y=labelMA[,2], col="white", pch=16, cex=2.8)
 		## Plot atom labels
 		if(atomnum==TRUE) {
-			text(x=labelMA[,1], y=labelMA[,2], gsub("_", "", rownames(labelMA)), cex=atomcex, col=atomcol) 
+			text(x=labelMA[,1], y=labelMA[,2], paste(gsub("_", "", rownames(labelMA)), hydrogens, charge, sep=""), cex=atomcex, col=atomcol) 
 		} else {
-			text(x=labelMA[,1], y=labelMA[,2], gsub("_.*", "", rownames(labelMA)), cex=atomcex, col=atomcol) 
+			text(x=labelMA[,1], y=labelMA[,2], paste(gsub("_.*", "", rownames(labelMA)), hydrogens, charge, sep=""), cex=atomcex, col=atomcol)
 		}
 	}
 }
@@ -1094,104 +1106,3 @@ setMethod(f="plot", signature="SDFset",
 })
 
 
-############################################################################
-## Overview of Objects, Methods and Functions for SDF and AP Classes in R ##
-############################################################################
-## Defined Classes
- 	# SDFstr: list-like container for many SDFs where each one is stored line-by-line as character vector
-	# SDF: single SDF stored in list with 4 components: header, atom block, bond block and sdf tail
-	# SDFset: list-like container containing one to many SDF class objects and the same number of ids in ID slot 
-
-## (A) Import SD File to SDFstr/SDFset Containers
-	# library(ChemmineR)
-	# sdfstr <- read.SDFstr("sdf_libs/MS_Spectrum.sdf")
-	# sdfset <- read.SDFset(sdfstr)
-	# sdfset <- read.SDFset("sdf_libs/MS_Spectrum.sdf")
-	# data(sdfsample); sdfset <- sdfsample
-
-## (B) Compound IDs
-	# sdfid(sdfset[1:4]) # Retrieves CMP IDs from Molecule Name field in header block.
-	# cid(sdfset[1:4]) # Retrieves CMP IDs from ID slot in SDFset.
-	# unique_ids <- makeUnique(sdfid(sdfset)) # Creates unique IDs by appending a counter to duplicates.
-	# cid(sdfset) <- unique_ids # Assigns uniquified IDs to ID slot.
-
-## (C) Subsetting, Replacement and Related Methods
-	# sdfstr[1:4]
-	# sdfstr[[1]] # returns one sdf component as character vector
-	# view(sdfset[1:4]) # Summary view of several SDFset components
-	# sdf <- sdfset[[1]] # returns object of class SDF 
-	# atomblock(sdf); sdf[[2]]; sdf[["atomblock"]] # all these methods return the same component
-	# sdf[[2]][1] <- 999
-	# sdfstr[1] <- sdfstr[1]
-	# length(sdfset)
-	# myids <- cid(sdfset)[sample(1:100, 10)] 
-	# sdfset[myids]	
-
-## (D) Miscellaneous Functions
-        ## Batch retrieval of SDF components
-	# header(sdfset[1:4]); atomblock(sdfset[1:4]); atomcount(sdfset[1:4]); bondblock(sdfset[1:4]); datablock(sdfset[1:4])
-	
-	## Create atom count matrix
-	# propma <- atomcountMA(sdfset=sdfset)
-	# boxplot(propma, main="Atom Frequency"); x11(); boxplot(rowSums(propma), main="All Atom Frequency")	
-
-	## Compute MW and formula
-	# MW(sdfset[1:4]); MF(sdfset[1:4])
-	# propma <- data.frame(MF=MF(sdfset), MW=MW(sdfset), atomcountMA(sdfset)); propma[1:4,]
-        # datablock(sdfset) <- propma # Works with all SDF components 
-	# test <- apply(propma[1:4,], 1, function(x) data.frame(col=colnames(propma), value=x)); sdf.visualize(sdfset[1:4], extra = test)
-
-	## Convert SDF tail to matrix
-	# blockmatrix <- datablock2ma(datablocklist=datablock(sdfset)) # Converts data block to matrix	
-	# numchar <- splitNumChar(blockmatrix=blockmatrix); numchar[[1]][1:4,] # Splits matrix to numeric matrix and character matrix
-	
-	## String Searching of SDFset
-	# grepSDFset("Ampicillin", sdfset, field="datablock", mode="subset") # To return index, set mode="index")
-
-## (E) Class Coercions
-	## From SDFstr to list, SDF and SDFset
-	# as(sdfstr[1:2], "list")  
-	# as(sdfstr[[1]], "SDF") 
-	# as(sdfstr[1:2], "SDFset") 
-	## From SDF to SDFstr, SDFset, list with SDF sub-components
-	# sdfcomplist <- as(sdf, "list")
-	# sdfcomplist <- as(sdfset[1:4], "list"); as(sdfcomplist[[1]], "SDF")
-	# sdflist <- as(sdfset[1:4], "SDF"); as(sdflist, "SDFset")
-	# as(sdfset[[1]], "SDFstr")
-	# as(sdfset[[1]], "SDFset")
-	## From SDFset to lists with components consisting of SDF or sub-components
-	# as(sdfset[1:4], "SDF")
-	# as(sdfset[1:4], "list")
-	# as(sdfset[1:4], "SDFstr")
-	## Concatenation of several SDFsets
-	# c(sdfset[1:4], sdfset[5:8]) # Note: c() is currently limited to two arguments!!
-
-## (F) Export Custom SDFs
-	## sdf2str(sdf=sdfset[[1]], sig=TRUE, cid=TRUE) # uses default components
-	## sdf2str(sdf=sdfset[[1]], head=letters[1:4], db=NULL) # uses custom components for header and datablock
-
-## (G) Write SDF, SDFset or SDFstr Classes to File
-	# write.SDF(sdfset[1:4], file="sub.sdf", sig=TRUE, cid=TRUE, db=NULL)
-	# write.SDF(sdfstr[1:4], file="sub.sdf")
-	# cat(unlist(as(sdfstr[1:4], "list")), file="sub.sdf", sep="\n") 
-
-## (H) Plot CMP Structures in R and on ChemMine Tools
-	# plot(sdfset[[1]])
-	# plot(sdfset[1:4])
-	# sdf.visualize(sdfset[1:4]
-	# extra <- apply(propma[1:4,], 1, function(x) data.frame(Property=colnames(propma), Value=x))
-	# sdf.visualize(sdfset[1:4], extra=extra)
-
-## (I) Usage of APset Class
-	# source("sdfFct.R"); source("simFct.R"); source("clusterFct.R")
-	# sdfset <- read.SDFset("sdf_libs/MS_Spectrum.sdf")
-	# apset <- sdf2ap(sdfset[1:100])
-	# cid(apset[1:4]); ap(apset[1:4])
-	# tmp <- as(apset, "list"); as(tmp, "APset")
-	# view(apset[1:4])
-	# apset2descdb(apset)
-	# cmp.search(apset, apset[1], type=3, cutoff=0.2) 
-	# plot(sdfset[names(cmp.search(apset, apset[6], type=2, cutoff=0.4))])
-	# db.explain(apset[2])
-	# clusters <- cmp.cluster(db=apset[1:100], cutoff = c(0.65, 0.5), save.distances="distmat.rda") # Distance matrix can be loaded with: load("distmat.rda")) 
-	# cmp.duplicated(apset, type=2)
