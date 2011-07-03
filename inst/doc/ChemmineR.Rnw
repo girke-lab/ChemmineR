@@ -435,7 +435,7 @@ as(sdfset[1:4], "SDFstr")
 
 \section{Molecular Property Functions}
 \markboth{Molecular Property Functions}{} % Only required to print section title in header field without numbering. 
-\noindent Several methods and functions are available to compute basic compound descriptors, such as molecular formula (MF), molecular weigth (MW) and atom frequencies. In all these function, it is important to set \Rfunarg{addH=TRUE} in order to include/add hydrogens that are often not specified in an SD file.
+\noindent Several methods and functions are available to compute basic compound descriptors, such as molecular formula (MF), molecular weight (MW) and atom frequencies. In all these functions, it is important to set \Rfunarg{addH=TRUE} in order to include/add hydrogens that are often not specified in an SD file.
 
 <<boxplot, eval=TRUE, fig=TRUE, keep.source=TRUE>>=
 propma <- atomcountMA(sdfset, addH=FALSE)
@@ -499,7 +499,11 @@ rowSums(conMA(sdfset[[1]], exclude=c("H")))
    # Return number of non-H bonds for each atom
 .
 @
-\noindent The function \Rfunction{bonds} provides related information. If \Rfunarg{type="bonds"}, a data frame is returned with bonds and charges, if \Rfunarg{type="charge"}, all charged atoms are returned and if \Rfunarg{type="addNH"} the number of missing hydrogens are returned for each molecule. 
+
+\section{Charges and Missing Hydrogens}
+\markboth{Charges and Missing Hydrogens}{} % Only required to print section title in header field without numbering. 
+\noindent 
+The function \Rfunction{bonds} returns information about the number of bonds, charges and missing hydrogens in \Rclass{SDF} and \Rclass{SDFset} objects. It is used by many other functions (\textit{e.g.} \Rfunction{MW}, \Rfunction{MF}, \Rfunction{atomcount}, \Rfunction{atomcuntMA} and \Rfunction{plot}) to correct for missing hydrogens that are often not specified in SD files. 
 <<eval=TRUE, keep.source=TRUE>>=
 bonds(sdfset[[1]], type="bonds")[1:4,]
 bonds(sdfset[1:2], type="charge")

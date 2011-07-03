@@ -21,7 +21,7 @@ If \code{type="charge"}, all charged atoms are returned and if \code{type="addNH
 }
 }
 \details{
-...
+It is used by many other functions (e.g. \code{MW}, \code{MF}, \code{atomcount}, \code{atomcuntMA} and \code{plot}) to correct for missing hydrogens that are often not specified in SD files. 
 }
 \value{
 If \code{x} is of class \code{SDF}, then a single \code{data.frame} or \code{vector} is returned. If \code{x} is of class \code{SDFset}, then a \code{list} of \code{data.frames} or \code{vecotors} is returned that has the same length and order as \code{x}. 
