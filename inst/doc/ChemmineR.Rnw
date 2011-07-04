@@ -453,19 +453,24 @@ atomprop[1:4,]
 @
 
 \noindent Compute MW and formula:
-<<eval=FALSE, keep.source=TRUE>>=
-MW(sdfset[1:4], addH=FALSE); MF(sdfset[1:4], addH=FALSE)
+<<eval=TRUE, keep.source=TRUE>>=
+MW(sdfset[1:4], addH=FALSE)
+MF(sdfset[1:4], addH=FALSE)
+@
+\noindent Combine MW, MF, charges and atom counts in one data frame:
+<<eval=TRUE, keep.source=TRUE>>=
 propma <- data.frame(MF=MF(sdfset, addH=FALSE), MW=MW(sdfset, addH=FALSE), 
-                     atomcountMA(sdfset, addH=FALSE)); propma[1:4,]
-datablock(sdfset) <- propma # Works with all SDF components
-test <- apply(propma[1:4,], 1, function(x) data.frame(col=colnames(propma), value=x))
-sdf.visualize(sdfset[1:4], extra = test)
+                     Ncharges=sapply(bonds(sdfset, type="charge"), length), 
+                     atomcountMA(sdfset, addH=FALSE))
+propma[1:4,]
 @
 
-\noindent The following shows an example for asssigning the values stored in a matrix (\textit{e.g.} property descriptors) to the data block components in an \Rclass{SDFset}. Each matrix row will be assigned to the corresponding slot position in the \Rclass{SDFset}.
-<<eval=TRUE, keep.source=TRUE>>=
-datablock(sdfset) <- propma
+\noindent The following shows an example for assigning the values stored in a matrix (\textit{e.g.} property descriptors) to the data block components in an \Rclass{SDFset}. Each matrix row will be assigned to the corresponding slot position in the \Rclass{SDFset}.
+<<eval=FALSE, keep.source=TRUE>>=
+datablock(sdfset) <- propma # Works with all SDF components
 datablock(sdfset)[1:4]
+test <- apply(propma[1:4,], 1, function(x) data.frame(col=colnames(propma), value=x))
+sdf.visualize(sdfset[1:4], extra = test)
 @
 
 \noindent The data blocks in SDFs contain often important annotation information about compounds. The \Rfunction{datablock2ma} function returns this information as matrix for all compounds stored in an \Rclass{SDFset} container. The \Rfunction{splitNumChar} function can then be used to organize all numeric columns in a \Rclass{numeric matrix} and the character columns in a \Rclass{character matrix} as components of a \Rclass{list} object.
