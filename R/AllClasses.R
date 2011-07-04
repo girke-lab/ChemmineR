@@ -1022,7 +1022,7 @@ grepSDFset <- function(pattern, x, field="datablock", mode="subset", ignore.case
 ##########################
 ## Plot single CMP Structure
 plotStruc <- function(sdf, atomcex=1.2, atomnum=FALSE, no_print_atoms=c("C"), noHbonds=TRUE, bondspacer=0.12, ...) {
-        toplot <- list(atomblock=cbind(atomblock(sdf)[,c(1:2)], as.matrix(bonds(sdf, type="bonds")[,-1])), bondblock=bondblock(sdf)[,1:3])
+        toplot <- list(atomblock=cbind(atomblock(sdf)[,c(1:2)], as.matrix(bonds(sdf, type="bonds")[,-1])), bondblock=as.matrix(as.data.frame(bondblock(sdf))[,1:3]))
 	## Create empty plot with proper dimensions
 	plot(toplot[[1]], type="n", axes=F, xlab="", ylab="", ...)
 	## Remove C-hydrogens including their bonds 
@@ -1031,7 +1031,7 @@ plotStruc <- function(sdf, atomcex=1.2, atomnum=FALSE, no_print_atoms=c("C"), no
                 nonbonded <- as.data.frame(toplot[[1]])[nonbonded,]
                 CHbondindex <- sapply(seq(toplot[[2]][,1]), function(x) paste(sort(gsub("_.*", "", rownames(toplot[[1]]))[toplot[[2]][x,1:2]]), collapse="") == "CH")
 		toplot[[1]] <- toplot[[1]][sort(unique(as.numeric(toplot[[2]][!CHbondindex,1:2]))), ]
-		toplot[[2]] <- toplot[[2]][!CHbondindex,]
+		toplot[[2]] <- as.matrix(as.data.frame(toplot[[2]])[!CHbondindex,]) 
                 toplot[[1]] <- as.matrix(rbind(toplot[[1]], nonbonded))
 	}	
 	## Plot bonds
