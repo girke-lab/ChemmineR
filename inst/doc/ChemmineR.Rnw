@@ -51,7 +51,7 @@ options(width=80)
 \section{Introduction}
 \markboth{Introduction}{} % Only required to print section title in header field without numbering. 
 
-\Rpackage{ChemmineR} is an R package for analyzing small molecule and screening data. Its new version ChemmineR-V2 contains functions for processing SDFs (structure data files), molecule depictions, structural similarity searching, clustering/diversity analyses of compound libraries with a wide spectrum of algorithms and utilities for managing complex data sets from high-throughput compound bio-assays. 
+\Rpackage{ChemmineR} is a cheminformatics package for analyzing drug-like small molecule and screening data in R. Its new version ChemmineR-V2 contains functions for processing SDFs (structure data files), molecule depictions, structural similarity searching, clustering/diversity analyses of compound libraries with a wide spectrum of algorithms and utilities for managing complex data sets from high-throughput compound bio-assays. 
 
 \begin{figure}[bthp]
   \centering
