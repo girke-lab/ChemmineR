@@ -1,4 +1,8 @@
 changelog
+	version 2.4.4
+		- added 'rings' function for ring perception and aromaticity assignment  
+                - added 'groups' function for counting functional groups
+
 	version 2.4.3
 		- fixes for plotStruc/plot to show charges, disconnected
                   atoms and missing hydrogens of non-C atoms

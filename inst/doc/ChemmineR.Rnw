@@ -61,7 +61,7 @@ options(width=80)
    \label{fig:overview}
 \end{figure}
 
-\noindent In addition, \Rpackage{ChemmineR} offers visualization functions for compound clustering results and chemical structures. The integration of chemoinformatic tools with the R programming environment has many advantages, such as easy access to a wide spectrum of statistical methods, machine learning algorithms and graphic utilities. The first version of this package was published in \cite{Cao2008c}. Since then many additional utilities have been added to the package and many more are under development for future releases. 
+\noindent In addition, \Rpackage{ChemmineR} offers visualization functions for compound clustering results and chemical structures. The integration of chemoinformatic tools with the R programming environment has many advantages, such as easy access to a wide spectrum of statistical methods, machine learning algorithms and graphic utilities. The first version of this package was published in \cite{Cao2008c}. Since then many additional utilities have been added to the package and many more are under development for future releases \citep{Backman2011a}. 
 
 \section{Getting Started}
 \markboth{Getting Started}{} % Only required to print section title in header field without numbering. 
@@ -433,9 +433,9 @@ as(sdfset[1:4], "list")
 as(sdfset[1:4], "SDFstr")
 @
 
-\section{Molecular Property Functions}
-\markboth{Molecular Property Functions}{} % Only required to print section title in header field without numbering. 
-\noindent Several methods and functions are available to compute basic compound descriptors, such as molecular formula (MF), molecular weight (MW) and atom frequencies. In all these functions, it is important to set \Rfunarg{addH=TRUE} in order to include/add hydrogens that are often not specified in an SD file.
+\section{Molecular Property Functions (Physicochemical Descriptors)}
+\markboth{Molecular Property Functions (Physicochemical Descriptors)}{} % Only required to print section title in header field without numbering. 
+\noindent Several methods and functions are available to compute basic compound descriptors, such as molecular formula (MF), molecular weight (MW), and frequencies of atoms and functional groups. In many of these functions, it is important to set \Rfunarg{addH=TRUE} in order to include/add hydrogens that are often not specified in an SD file.
 
 <<boxplot, eval=TRUE, fig=TRUE, keep.source=TRUE>>=
 propma <- atomcountMA(sdfset, addH=FALSE)
@@ -457,11 +457,19 @@ atomprop[1:4,]
 MW(sdfset[1:4], addH=FALSE)
 MF(sdfset[1:4], addH=FALSE)
 @
-\noindent Combine MW, MF, charges and atom counts in one data frame:
+
+\noindent Enumerate functional groups:
+<<eval=TRUE, keep.source=TRUE>>=
+groups(sdfset[1:4], groups="fctgroup", type="countMA")
+@
+
+\noindent Combine MW, MF, charges, atom counts, functional group counts and ring counts in one data frame:
 <<eval=TRUE, keep.source=TRUE>>=
 propma <- data.frame(MF=MF(sdfset, addH=FALSE), MW=MW(sdfset, addH=FALSE), 
                      Ncharges=sapply(bonds(sdfset, type="charge"), length), 
-                     atomcountMA(sdfset, addH=FALSE))
+                     atomcountMA(sdfset, addH=FALSE), groups(sdfset, 
+		     type="countMA"), rings(sdfset, upper=6, type="count", 
+		     arom=TRUE))
 propma[1:4,]
 @
 
@@ -515,6 +523,36 @@ bonds(sdfset[1:2], type="charge")
 bonds(sdfset[1:2], type="addNH")
 @
 
+\section{Ring Perception and Aromaticity Assignment}
+\markboth{Ring Perception and Aromaticity Assignment}{} % Only required to print section title in header field without numbering. 
+\noindent 
+The function \Rfunction{rings} identifies all possible rings in one or many molecules (here \Rclass{sdfset[1]}) using the exhaustive ring perception algorithm from \cite{Hanser1996a}. In addition, the function can return all smallest possible rings as well as aromaticity information. 
+
+\vspace{0.3cm}
+\noindent The following example returns all possible rings in a \Rclass{list}. The argument \Rfunarg{upper} allows to specify an upper length limit for rings. Choosing smaller length limits will reduce the search space resulting in shortened compute times. Note: each ring is represented by a character vector of atom symbols that are numbered by their position in the atom block of the corresponding \Rclass{SDF/SDFset} object.
+<<eval=TRUE, keep.source=TRUE>>=
+rings(sdfset[1], upper=Inf, type="all", arom=FALSE, inner=FALSE)
+@
+\noindent For visual inspection, the corresponding compound structure can be plotted with the same atom numbers as the rings: 
+<<eval=TRUE, fig=TRUE, keep.source=TRUE>>=
+plot(sdfset[1], print=FALSE, atomnum=TRUE, no_print_atoms="H")
+@
+
+\noindent Aromaticity information of the rings can be returned in a logical vector by setting \Rfunarg{arom=TRUE}:
+<<eval=TRUE, keep.source=TRUE>>=
+rings(sdfset[1], upper=Inf, type="all", arom=TRUE, inner=FALSE)  
+@
+
+\noindent Return rings with no more than 6 atoms that are also aromatic:
+<<eval=TRUE, keep.source=TRUE>>=
+rings(sdfset[1], upper=6, type="arom", arom=TRUE, inner=FALSE)
+@ 
+
+\noindent Count shortest possible rings and their aromaticity assignments by setting \Rfunarg{type=count} and \Rfunarg{inner=TRUE}. The inner (smallest possible) rings are identified by first computing all possible rings and then selecting only the inner rings. For more details, consult the help documentation with \Rfunction{?rings}.
+<<eval=TRUE, keep.source=TRUE>>=
+rings(sdfset[1:4], upper=Inf, type="count", arom=TRUE, inner=TRUE) 
+@ 
+
 \section{Rendering Chemical Structure Images}
 \markboth{Rendering Chemical Structure Images}{} % Only required to print section title in header field without numbering. 
 \subsection{R Graphics Device}
@@ -536,7 +574,7 @@ plot(sdfset["CMP1"], atomnum = TRUE,  noHbonds=F , no_print_atoms = "",
      atomcex=0.8, sub=paste("MW:", MW(sdfsample["CMP1"])), print=FALSE)
 @
 
-\noindent For more details, consult help documentation with \Rfunction{?plotStruc} or \Rfunction{?plot}.
+\noindent In the above plot, the atom block position numbers in the SDF are printed next to the atom symbols (\Rfunarg{atomnum = TRUE}). For more details, consult help documentation with \Rfunction{?plotStruc} or \Rfunction{?plot}.
 
 \subsection{Online with ChemMine Tools}
 Alternatively, one can visualize compound structures with a standard web browser using the online ChemMine Tools service. The service allows to display other information next to the structures using the extra argument of the \Rfunction{sdf.visualize} function. The following examples demonstrate, how one can plot and annotate structures by passing on extra data as vector of character strings, matrices or lists.  \\

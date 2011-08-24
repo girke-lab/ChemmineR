@@ -819,6 +819,368 @@ MF <- function(x, ...) {
 	return(MF[-1]) # Minus one to remove duplicated entry in first row of propma
 }
 
+## (5.3.4) Ring Perception and Aromaticity Assignment
+## Implements with some modifications the exhaustive ring perception algorithm 
+## from Hanser et al (1996). URL: http://pubs.acs.org/doi/abs/10.1021/ci960322f
+
+## (a) Iterative removal of atoms with single non hydrogen bonds.
+## Returns from molecule only its rings and their inter-connections.
+.cyclicCore <- function(x) {
+	if(length(x) != 1) stop("x needs to be a single molecule")
+	if(class(x) == "SDFset") x <- x[[1]]
+	path <- conMA(x, exclude="H")
+	noconnect <- rowSums(path) != 0 # Removes atoms with no connections
+	path <- path[noconnect, noconnect]
+	if(all(dim(path) == 0)) { return(path) } 
+	term <- which(rowSums(path > 0)==1)
+	while(length(term) > 0) {
+		path <- path[-term,-term]
+		if(any(dim(path) == 0) | is.vector(path)) { break() }
+		term <- which(rowSums(path > 0)==1)
+	}
+	return(path)
+}
+
+## (b) Function to return the longest possible linear bond paths where:
+##     - internal atoms have only two heavy atom neighbors
+##     - terminal atoms are atoms with more than two heavy atom neighbors or they are ring closures
+.linearCon <- function(x) {
+	secatoms <- rowSums(x > 0) == 2
+	secatoms <- names(which(secatoms))
+	.linearCon <- function(vertex, x=x) {
+		con <- as.list(names(which(x[vertex, ] > 0)))
+		for(i in seq(along=con)) {
+			termatom <- con[[i]][length(con[[i]])]
+			termcon <- names(which(x[termatom, ] > 0))
+			termcon <- termcon[!termcon %in% vertex]
+			while(length(termcon) == 1 & !any(duplicated(con[[i]]))) { 
+				con[[i]] <- c(con[[i]], termcon)						
+				termatom <- con[[i]][length(con[[i]])]
+				termcon <- names(which(x[termatom, ] > 0))
+				termcon <- termcon[!termcon %in% con[[i]][length(con[[i]])-1]]
+			}
+		}
+		if(paste(sort(unique(con[[1]])), collapse="") == paste(sort(unique(con[[2]])), collapse="")) {
+			return(con[[1]])
+		} else {
+			return(c(rev(con[[1]]), vertex, con[[2]]))
+		}
+	}
+	linearconlist <- lapply(secatoms, function(y) .linearCon(vertex=y, x=x))
+	nodups <- !duplicated(sapply(linearconlist, function(y) paste(sort(unique(y)), collapse=""))) 
+	linearconlist <- linearconlist[nodups]
+	return(linearconlist)
+}
+
+## (c) Assemble intermediate results in a list
+.update <- function(con, path) {
+	## Remove non-terminal atoms in each path
+	center_atoms <- unique(unlist(lapply(path, function(x) x[-c(1, length(x))])))
+	con1 <- con[!rownames(con) %in% center_atoms, !colnames(con) %in% center_atoms]
+	## Add atom pairs with three neighbors to connection list
+	if(is.matrix(con1)) {
+		remainbonds <- con1
+		remainbonds[lower.tri(remainbonds)] <- 0
+		remainbonds <- lapply(rownames(remainbonds), function(x) names(which(remainbonds[x,] > 0)))
+		names(remainbonds) <- rownames(con1)
+		remainbonds <- cbind(rep(names(remainbonds), sapply(remainbonds, length)), unlist(remainbonds, use.names=F))
+		remainbonds <- split(remainbonds, seq(along=remainbonds[,1]))
+		path <- c(path, remainbonds)
+		names(path) <- seq(along=path)
+	}
+	## Collect complete rings and remove them from path object
+	index <- unlist(lapply(path, function(y) any(duplicated(y))))
+	rings <- path[index]
+	path <- path[!index]
+	names(path) <- seq(along=path)
+	## Connection list for path component
+	conpath <- t(sapply(path, function(x) x[c(1, length(x))]))
+	ends <- unique(as.vector(conpath))
+	conpath <- lapply(ends, function(x) as.numeric(names(which(rowSums(conpath==x) > 0))))
+	names(conpath) <- ends
+	conpath <- conpath[sapply(conpath, length) > 1] # removes ends that occur only once 
+	## Assemble results in list
+	return(list(con=con, conpath=conpath, path=path, rings=rings))
+}
+
+## (d) Return rings from cyclist object
+.rings <- function(cyclist, upper=Inf) {
+	## Define data containers
+	pathlist <- cyclist$path
+	conpath <- cyclist$conpath
+	pathlistnew <- list() 
+	rings <- list()
+	## Loop to join linear paths/fragments stored in pathlist
+	for(i in names(conpath)) {
+		if(length(conpath) == 0 | !any(names(conpath) == i)) { next() }
+		pos <- t(combn(conpath[[i]], m=2))
+		for(j in seq(along=pos[,1])) { 
+			p1 <- pathlist[[pos[j,1]]]
+			p2 <- pathlist[[pos[j,2]]]
+			if(sum(p1[-c(1,length(p1))] %in% p2[-c(1,length(p2))]) > 0) {
+				next()
+			}
+			if(p1[1] == i & p2[1] == i) { # matching s1:s2 
+				pathlistnew[[length(pathlistnew)+1]] <- c(rev(p2[-1]), p1)
+			}
+			if(p1[length(p1)] == i & p2[length(p2)] == i) { # matching e1:e2 
+				pathlistnew[[length(pathlistnew)+1]] <- c(p1, rev(p2[-length(p2)]))
+			}
+			if(p1[1] == i & p2[length(p2)] == i) { # matching s1:e2
+				pathlistnew[[length(pathlistnew)+1]] <- c(p2, p1[-1])
+			}
+			if(p1[length(p1)] == i & p2[1] == i) { # matching e1:s2
+				pathlistnew[[length(pathlistnew)+1]] <- c(p1, p2[-1])
+			}
+		}
+		## Various postprocessing routines for joined fragments follow
+		if(length(pathlistnew) == 0) { next() }
+		## Remove duplicates
+		dups <- duplicated(sapply(pathlistnew, function(x) paste(sort(unique(x)), collapse="_")))
+		pathlistnew <- pathlistnew[!dups]
+		## Set maximum ring size; improves time performance if outer rings are not needed
+		if(upper != Inf) {   
+			l <- sapply(pathlistnew, length)
+			pathlistnew <- pathlistnew[l <= upper]
+			if(length(pathlistnew) == 0) { next() }
+		} 
+		## Collect complete rings and remove them from path object
+		index <- unlist(lapply(pathlistnew, function(y) any(duplicated(y[c(1, length(y))]))))
+		rings[[length(rings)+1]] <- pathlistnew[index]
+		pathlistnew <- pathlistnew[!index]
+		## Remove paths with internal duplicates 
+		if(length(pathlistnew) > 0) {
+			index <- unlist(lapply(pathlistnew, function(y) any(duplicated(y))))
+			pathlistnew <- pathlistnew[!index]
+		}
+		## Update pathlist and conpath
+		pathlist <- c(pathlist[-conpath[[i]]], pathlistnew)
+		dups <- duplicated(sapply(pathlist, function(x) paste(sort(unique(x)), collapse="_")))
+		pathlist <- pathlist[!dups]
+		names(pathlist) <- seq(along=pathlist)
+		conpath <- t(sapply(pathlist, function(x) x[c(1, length(x))]))
+		ends <- unique(as.vector(conpath))
+		conpath <- lapply(ends, function(x) as.numeric(names(which(rowSums(conpath==x) > 0))))
+		names(conpath) <- ends
+		conpath <- conpath[sapply(conpath, length) > 1] # removes ends that occur only once
+		pathlistnew <- list()
+	}
+	## Generate proper output format 
+	rings <- unlist(rings, recursive=FALSE)
+	dups <- duplicated(sapply(rings, function(x) paste(sort(unique(x)), collapse="_")))
+	rings <- c(cyclist$rings, rings[!dups])
+	l <- sapply(rings, length) 
+	rings <- rings[order(l)]
+	if(upper != Inf) { rings <- rings[l <= upper] }
+	if(length(rings) > 0) { 
+		names(rings) <- paste("ring", seq(along=rings), sep="") 
+	} else {
+		rings <- NULL
+	}
+	return(rings)
+}
+
+## (e) Identify inner rings
+## Expected input x is list of rings from call: 
+##      x <- rings(x=sdfset[[1]], upper=Inf, type="all", arom=FALSE) 
+.is.inner <- function(x) {
+        rnames <- rev(names(x)); names(rnames) <- rnames
+        r <- x
+        names(r) <- paste(names(r), "_", sep="")
+        r <- unlist(r)
+        for(i in rnames) {
+                tmp <- x[[i]]
+                r2 <- r[!gsub("_.*", "", names(r)) %in% i] 
+                if(all(tmp %in% r2)) {
+                        rnames[i] <- "redundant"
+                        r <- r2
+                }
+        }
+        return(x[rev(rnames!="redundant")])
+}
+
+## (f) Aromaticity assignment for rings
+## Approach
+##   (i) Identify rings where all atoms are sp2 hybridized. This means each atom has a 
+##       double bond or at least one lone electron pair and is attached to a sp2 hybridized atom
+##   (ii) Hueckel's rule needs to be true (4n+2=integer): 2, 6, 10, 14, 18, ... pi electrons 
+##        per ring.
+.is.arom <- function(sdf, rings) {
+	if(length(rings)==0) { return(NULL) } 
+	con <- conMA(sdf)
+	b2 <- bonds(sdf)
+	b <- b2[,"Nbondcount"] - b2[,"charge"]
+	names(b) <- paste(b2[,"atom"], "_", seq(along=b2[,1]), sep="") 
+	.neighborsFct <- function(x) { sapply(rownames(x), function(y) paste(sort(paste(x[y,][x[y,]!=0], sep="_")), collapse="_")) }
+	## Determine aromaticity
+	.arom <- function(con, b, r=rings[[1]]) {
+		## Identify sp2 hybridized atoms
+		sp <- .neighborsFct(x=con)[r]
+		sp2 <- grepl("1_2$", sp)
+		## Identify atoms with lone electron pairs
+		el <- c(Al=3, As=5, At=7, B=3, Bi=5, Br=7, C=4, Cl=7, F=7, Ga=3, Ge=4, I=7, In=3, N=5, O=6, P=5, Pb=4, Po=6, S=6, Sb=5, Se=6, Si=4, Sn=4, Te=6, Tl=3)
+		bsub <- b[names(sp)]
+		lp <- el[gsub("_.*", "", names(bsub))] - bsub >= 2
+		lp[is.na(lp)] <- 0 # If an element is not specified under el, then its NA value in lp is set to zero
+		sp2lp <- all(sp2 | lp)
+		## Hueckel's rule 
+		d <- rowSums(con[r, r]==2)
+		double <- sum(d) 
+		if(length(d[lp]) != 0) {
+			lpcount <- sum(lp[d==0]) * 2
+		} else {
+			lpcount <- 0
+		}
+		n <- ((double + lpcount) - 2) / 4
+		is.wholenumber <- function(x, tol = .Machine$double.eps^0.5)  abs(x - round(x)) < tol
+		hueckel <- is.wholenumber(n)
+		return(sp2lp & hueckel)
+	}
+	return(sapply(names(rings), function(x) .arom(con, b, r=rings[[x]])))
+}
+
+## (g) Ring and aromaticity perception by running the functions (1)-(5) 
+rings <- function(x, upper=Inf, type="all", arom=FALSE, inner=FALSE) {
+        if(!any(c("SDF", "SDFset") %in% class(x))) stop("x needs to be of class SDF or SDFset")
+	if(inner==TRUE & upper!=Inf) stop("Inner ring prediction requires upper=Inf")
+        runAll <- function(x, upper) {
+		con <- .cyclicCore(x)
+		if(any(dim(con) == 0) | is.vector(con) | all(con == 0)) { # TRUE for linear compounds 
+			if(arom==TRUE) {
+				if(type=="all") return(list(RINGS=NULL, AROMATIC=NULL))
+				if(type=="count") return(c(RINGS=0, AROMATIC=0))
+			} else {
+				if(type=="all") return(NULL)
+				if(type=="count") return(0)
+			}
+		} else {
+			path <- .linearCon(x=con)
+			cyclist <- .update(con=con, path=path)
+			myrings <- .rings(cyclist, upper+1) # Plus 'upper+1' is required because at this step all rings have duplicated atoms at ring closure
+			myrings <- lapply(myrings, function(x) x[-1]) # Removes duplicated atom at ring closure 
+			if(upper==Inf & inner==TRUE) myrings <- .is.inner(x=myrings) # Reduces myrings to inner rings only 
+                        if(arom==TRUE) {
+				myarom <- .is.arom(sdf=x, rings=myrings)
+				if(type=="all") return(list(RINGS=myrings, AROMATIC=myarom))
+				if(type=="arom") return(list(AROMATIC_RINGS=myrings[myarom]))
+				if(type=="count") return(c(RINGS=length(myrings), AROMATIC=sum(myarom)))
+			} else {
+				if(type=="all") return(myrings)
+				if(type=="count") return(length(myrings))
+			}
+		}
+	}
+	if(class(x)=="SDF") { 
+		return(runAll(x, upper))
+	}
+	if(class(x)=="SDFset" & length(x) == 1) { 
+		return(runAll(x[[1]], upper))
+	}
+	if(class(x)=="SDFset" &  length(x) > 1) {
+		myrings <- lapply(1:length(x), function(y) runAll(x[[y]], upper))
+		names(myrings) <- cid(x)
+		if(type=="all" | type=="arom") return(myrings)
+		if(type=="count") {
+			mycol <- c("RINGS", "AROMATIC")
+			return(matrix(unlist(myrings), ncol=length(myrings[[1]]), dimnames=list(names(myrings), mycol[1:length(myrings[[1]])]), byrow=T))
+		}
+	}
+}
+## Usage:
+# rings(sdfset[1:4], upper=6, type="all", arom=TRUE)
+# rings(sdfset[1:4], upper=6, type="arom", arom=TRUE)
+# rings(sdfset[1:4], upper=6, type="count", arom=TRUE)
+# plot(sdfset[1], print=F, atomnum=T, no_print_atoms="H") 
+# plot(sdfset[1:4], print=F, atomnum=T, no_print_atoms="H") 
+
+## (5.3.5) Enumerate Functional Groups
+## (a) Generate neighbor information for each heavy atom in a molecule
+.neighbors <- function(x, type="countMA") {
+        ## Input checks        
+        if(!any(c("SDF", "SDFset") %in% class(x))) stop("x needs to be of class SDF or SDFset")
+        if(!any(c("all", "count", "countMA") %in% type)) stop("type can only be assigned: all, count or countMA") 
+        ## Return neighbors
+        .neighborsFct <- function(x, type=type) {
+                colnames(x) <- paste(colnames(x), colSums(x>0), sep="_") # Adds number of bonded heavy atom neighbors (non-hydrogens)
+                neighbors <- sapply(rownames(x), function(y) paste(sort(paste(gsub("_.*_", "_", colnames(x)[x[y,]!=0]), x[y,][x[y,]!=0], sep="_")), collapse="_"))
+                if(type=="all") {
+                        return(neighbors)
+                }
+                if(type=="count" | type=="countMA") {
+                        return(table(paste(gsub("_.*", "", names(neighbors)), neighbors, sep=":")))
+                }
+        }
+        ## Run on SDF object
+        if(class(x)=="SDF") {
+                x <- conMA(x, exclude="H")
+                neighbors <- .neighborsFct(x, type)
+                return(neighbors)
+        }
+        ## Run on SDFset objects containing one or many molecules
+        if(class(x)=="SDFset") {
+                cid <- cid(x)
+                x <- conMA(x, exclude="H")
+                neighbor_set <- lapply(seq(along=x), function(y) .neighborsFct(x[[y]], type))
+                names(neighbor_set) <- cid
+                if(type=="all" | type=="count") {
+                        return(neighbor_set)
+                }
+                if(type=="countMA") {
+                        columns <- unique(unlist(lapply(seq(along=neighbor_set), function(x) names(neighbor_set[[x]]))))
+                        myMA <- matrix(NA, length(neighbor_set), length(columns), dimnames=list(NULL, columns))
+                        for(i in seq(along=neighbor_set)) myMA[i, names(neighbor_set[[i]])] <- neighbor_set[[i]]
+                        myMA[is.na(myMA)] <- 0
+                        rownames(myMA) <- cid
+                        return(myMA)
+                }
+        }
+}
+## Usage:
+# .neighbors(sdfset[1:4], type="all")
+# .neighbors(sdfset[1:4], type="countMA")
+
+## (b) Count functional groups
+groups <- function(x, groups="fctgroup", type) {
+        ## Input checks        
+        if(!any(c("SDF", "SDFset") %in% class(x))) stop("x needs to be of class SDF or SDFset")
+        if(groups=="fctgroup" & (type=="count" | type=="all")) stop("when groups=\"fctgroup\", only type=\"countMA\" can be used")
+        mylength <- length(x)
+        ## Support for single molecule objects
+	if(mylength==1) { x <- as(x, "SDFset"); y <- x; z <- x; cid(z) <- "dummy"; x <- c(y, z) }
+        ## Generate neighbor counts
+	neighbors <- .neighbors(x, type)
+        ## Return neighbor counts if requested
+	if(groups[1]=="neighbors") { 
+		if(class(neighbors)=="matrix") {
+			neighbors <- neighbors[!rownames(neighbors) %in% "dummy", ]
+		} else { 
+			neighbors <- neighbors[!names(neighbors) %in% "dummy"]
+		}
+		return(neighbors) 
+	
+	}
+        ## Count functional groups based on data stored in neighbor matrix
+        if(groups[1]=="fctgroup") { 
+		groups <- c(RNH2="^C:.*N_1_1$", R2NH="^N:C_._1_C_._1$", R3N="^N:C_._1_C_._1_C_._1$", 
+                            ROPO3="^P:O_._._O_._._O_._._O_._.$", ROH="(?=^C:.*O_1_1)(?=^(?:(?!(N|O|P|S)_._(2|3)).)*$)", 
+		            RCHO="^O:C_2_2", RCOR="^C:C_._1_C_._1.*O_1_2", RCOOH="^C:.*O_1_1_O_1_2", 
+			    RCOOR="^C:.*O_1_2_O_2_1", ROR="^O:.*C_._1_C_._1") 
+	}
+        groupMA <- sapply(names(groups), function(x) rowSums(neighbors[, rep(grep(groups[x], colnames(neighbors), perl=TRUE),2)]/2))
+	## Fix counts for ambiguous functional groups
+        if(c("ROR" %in% colnames(groupMA))) groupMA[, "ROR"] <- groupMA[, "ROR"] - groupMA[, "RCOOR"] 
+	if(mylength>1) {
+                return(groupMA)
+        } else {
+                return(groupMA[1,])
+        }
+}
+## Usage:
+# groups(sdfset[1:20], groups="fctgroup", type="countMA") 
+# groups(sdfset[1:4], groups="neighbors", type="countMA")
+# groups(sdfset[1:4], groups="neighbors", type="count")
+# groups(sdfset[1:4], groups="neighbors", type="all")
+
 ##############################################################
 ## (5.4) Convert SDF Tail to Numeric and Character Matrices ##
 ##############################################################
@@ -862,7 +1224,6 @@ splitNumChar <- function(blockmatrix=blockmatrix) {
 #########################
 ## (5.5) Bond Matrices ##
 #########################
-
 ## (5.5.1) Generate bond matrix from SDFset or SDF objects
 conMA <- function(x, exclude="none") {
         ## Function for SDF object 
@@ -1017,6 +1378,7 @@ grepSDFset <- function(pattern, x, field="datablock", mode="subset", ignore.case
 	}
 }
 
+
 ##########################
 ## (6) Plotting Methods ##
 ##########################
@@ -1082,7 +1444,7 @@ plotStruc <- function(sdf, atomcex=1.2, atomnum=FALSE, no_print_atoms=c("C"), no
 		}
 	}
 }
-# Usage:
+## Usage:
 # plotStruc(sdf=sdfset[[2]], atomcex=1.2, atomnum=F, no_print_atoms=c("C"), noHbonds=TRUE, bondspacer=0.08)
 # par(mfrow=c(2,3)); for(i in 1:6) plotStruc(sdf=sdfset[[i]], atomcex=1.8, atomnum=F, no_print_atoms=c("C"), noHbonds=TRUE, bondspacer=0.08)
 
