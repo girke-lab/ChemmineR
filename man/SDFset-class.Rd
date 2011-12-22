@@ -31,6 +31,7 @@
 \alias{SDFset2SDF<-,SDFset-method}
 \alias{show,SDFset-method}
 \alias{view,SDFset-method}
+\alias{SDFset}
 
 \title{Class "SDFset"}
 \description{
@@ -77,6 +78,7 @@ Objects can be created by calls of the form \code{new("SDFset", ...)}.
     \item{SDFset2SDF<-}{\code{signature(x = "SDFset")}: replacement method for \code{SDFset} component in \code{SDFset} using accessor method }
     \item{show}{\code{signature(object = "SDFset")}: prints summary of \code{SDFset} }
     \item{view}{\code{signature(x = "SDFset")}: prints extended summary of \code{SDFset} }
+    \item{SDFset}{\code{SDFset(SDF, ID)}: interface to \code{SDFset} constructor}
 	 }
 }
 \references{

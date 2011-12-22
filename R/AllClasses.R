@@ -585,6 +585,13 @@ setAs(from="list", to="SDFset",
 		new("SDFset", SDF=from, ID=names(from))
 })
 
+## User interface to SDFset() constructor
+SDFset <- function(SDFlist=list(), ID=character()) {
+	new("SDFset", SDF=SDFlist, ID=ID)
+}
+
+setClass("SDFset", representation(SDF="list", ID="character"))
+
 
 #######################################################
 ## (4) Class and Method Definitions for AP and APset ##
