@@ -1337,113 +1337,117 @@ bonds <- function(x, type="bonds") {
 ##########################################################################
 ## Function to obtain substructure from SDF/SDFset object by providing a row
 ## index for atom block. Both atom and bond blocks will be subsetted accordingly. 
+## Two functions are combined in one: type="new" assigns new atom numbers to
+## the subsetted SDF, while type="old" maintains the numbering of the source SDF.
+atomsubset <- function (x, atomrows, type="new", datablock = FALSE) {
+    ## Variant that assigns new numbers to atoms in subsetted SDF
+    if(type=="new") { 
+	if(!any(c("SDF", "SDFset") %in% class(x))) 
+	    stop("x needs to be of class SDF or SDFset")
+	if(class(x) == "SDFset" & class(atomrows) != "list") 
+	    stop("if x is of class SDFset, atomrows argument needs to be a list")
+	if(class(x) == "SDFset") {
+	    if (!all(cid(x) == names(atomrows))) 
+		stop("x and atomrows need to have same length and identical component (molecule) names")
+	}
+	.atomsubset <- function(x, atomrows) {
+	    hb <- header(x)
+	    ab <- atomblock(x)[atomrows, ]
+	    bb <- bondblock(x)
+	    index <- rowSums(cbind(bb[, 1] %in% atomrows, bb[, 2] %in% 
+		atomrows)) == 2
+	    bb <- bb[index, ]
+	    pos <- as.numeric(gsub(".*_", "", rownames(ab)))
+	    oripos <- 1:length(pos)
+	    names(oripos) <- pos
+	    tmp <- bb[, 1:2]
+	    tmp2 <- tmp
+	    for (i in oripos) tmp2[tmp == as.numeric(names(oripos[i]))] <- i
+	    bb[, 1:2] <- tmp2
+	    if (is.vector(bb)) {
+		bb <- t(as.matrix(bb))
+	    }
+	    countsLine <- hb[4]
+	    atomCount <- sprintf("%3d", length(atomrows))
+	    bondCount <- sprintf("%3d", length(rowSums(bb)))
+	    # update atom count and bond count
+	    hb[4] <- paste(atomCount, bondCount, substr(countsLine, 7, 100000L), sep="")
+	    # update bond block row names
+	    row.names(bb) <- 1:length(rowSums(bb))
+	    # update atom block row names
+	    row.names(ab) <- paste(gsub("_.*", "",rownames(ab)), 1:length(atomrows), sep="_")
+	    if (datablock == FALSE) {
+		sdf <- new("SDF", header = hb, atomblock = ab, bondblock = bb)
+		return(sdf)
+	    }
+	    if (datablock == TRUE) {
+		sdf <- new("SDF", header = hb, atomblock = ab, bondblock = as.matrix(bb), 
+		    datablock = datablock(x))
+		return(sdf)
+	    }
+	}
+	if (class(x) == "SDF") {
+	    return(.atomsubset(x, atomrows))
+	}
+	if (class(x) == "SDFset") {
+	    ids <- cid(x)
+	    sdflist <- lapply(cid(x), function(y) atomsubset(sdfset[[y]], 
+		atomrows[[y]]))
+	    names(sdflist) <- ids
+	    sdfset <- as(sdflist, "SDFset")
+	    return(sdfset)
+	    }
+    }
 
-## Yan's version of this function
-atomsubset <- function (x, atomrows, datablock = FALSE) {
-    if (!any(c("SDF", "SDFset") %in% class(x))) 
-        stop("x needs to be of class SDF or SDFset")
-    if (class(x) == "SDFset" & class(atomrows) != "list") 
-        stop("if x is of class SDFset, atomrows argument needs to be a list")
-    if (class(x) == "SDFset") {
-        if (!all(cid(x) == names(atomrows))) 
-            stop("x and atomrows need to have same length and identical component (molecule) names")
-    }
-    .atomsubset <- function(x, atomrows) {
-        hb <- header(x)
-        ab <- atomblock(x)[atomrows, ]
-        bb <- bondblock(x)
-        index <- rowSums(cbind(bb[, 1] %in% atomrows, bb[, 2] %in% 
-            atomrows)) == 2
-        bb <- bb[index, ]
-        pos <- as.numeric(gsub(".*_", "", rownames(ab)))
-        oripos <- 1:length(pos)
-        names(oripos) <- pos
-        tmp <- bb[, 1:2]
-        tmp2 <- tmp
-        for (i in oripos) tmp2[tmp == as.numeric(names(oripos[i]))] <- i
-        bb[, 1:2] <- tmp2
-        if (is.vector(bb)) {
-            bb <- t(as.matrix(bb))
-        }
-        countsLine <- hb[4]
-        atomCount <- sprintf("%3d", length(atomrows))
-        bondCount <- sprintf("%3d", length(rowSums(bb)))
-        # update atom count and bond count
-        hb[4] <- paste(atomCount, bondCount, substr(countsLine, 7, 100000L), sep="")
-        # update bond block row names
-        row.names(bb) <- 1:length(rowSums(bb))
-        # update atom block row names
-        row.names(ab) <- paste(gsub("_.*", "",rownames(ab)), 1:length(atomrows), sep="_")
-        if (datablock == FALSE) {
-            sdf <- new("SDF", header = hb, atomblock = ab, bondblock = bb)
-            return(sdf)
-        }
-        if (datablock == TRUE) {
-            sdf <- new("SDF", header = hb, atomblock = ab, bondblock = as.matrix(bb), 
-                datablock = datablock(x))
-            return(sdf)
-        }
-    }
-    if (class(x) == "SDF") {
-        return(.atomsubset(x, atomrows))
-    }
-    if (class(x) == "SDFset") {
-        ids <- cid(x)
-        sdflist <- lapply(cid(x), function(y) atomsubset(sdfset[[y]], 
-            atomrows[[y]]))
-        names(sdflist) <- ids
-        sdfset <- as(sdflist, "SDFset")
-        return(sdfset)
-    }
-}
-
-## Thomas' old version (delete later)
-.atomsubset_old <- function(x, atomrows, datablock=FALSE) {
+    ## Variant that maintains atom numbers from source SDF in subsetted SDF
+    if(type=="old") { 
         if(!any(c("SDF", "SDFset") %in% class(x))) stop("x needs to be of class SDF or SDFset")
         if(class(x)=="SDFset" & class(atomrows)!="list") stop("if x is of class SDFset, atomrows argument needs to be a list")
         if(class(x)=="SDFset") {
                 if(!all(cid(x) == names(atomrows))) stop("x and atomrows need to have same length and identical component (molecule) names")
         }
         .atomsubset <- function(x, atomrows) {
-                hb <- header(x)
-                ab <- atomblock(x)[atomrows, ]
-                bb <- bondblock(x)
-                index <- rowSums(cbind(bb[,1] %in% atomrows, bb[,2] %in% atomrows)) == 2
-                bb <- bb[index,]
+	    hb <- header(x)
+	    ab <- atomblock(x)[atomrows, ]
+	    bb <- bondblock(x)
+	    index <- rowSums(cbind(bb[,1] %in% atomrows, bb[,2] %in% atomrows)) == 2
+	    bb <- bb[index,]
 
-                ## Update bb to positions in ab
-		pos <- as.numeric(gsub(".*_", "", rownames(ab)))
-		oripos <- 1:length(pos)
-		names(oripos) <- pos
-		tmp <- bb[,1:2]; tmp2 <- tmp 
-		for(i in oripos) tmp2[tmp==as.numeric(names(oripos[i]))] <- i
-		bb[,1:2] <- tmp2
-		
-		## Outputs
-		if(is.vector(bb)) { bb <- t(as.matrix(bb)) }
-                if(datablock==FALSE) {
-                        sdf <- new("SDF", header=hb, atomblock=ab, bondblock=bb)
-                        return(sdf)
-                }
-                if(datablock==TRUE) {
-                        sdf <- new("SDF", header=hb, atomblock=ab, bondblock=as.matrix(bb), datablock=datablock(x))
-                        return(sdf)
-                }
+	    ## Update bb to positions in ab
+	    pos <- as.numeric(gsub(".*_", "", rownames(ab)))
+	    oripos <- 1:length(pos)
+	    names(oripos) <- pos
+	    tmp <- bb[,1:2]; tmp2 <- tmp 
+	    for(i in oripos) tmp2[tmp==as.numeric(names(oripos[i]))] <- i
+	    bb[,1:2] <- tmp2
+	    
+	    ## Outputs
+	    if(is.vector(bb)) { bb <- t(as.matrix(bb)) }
+	    if(datablock==FALSE) {
+		sdf <- new("SDF", header=hb, atomblock=ab, bondblock=bb)
+		return(sdf)
+	    }
+	    if(datablock==TRUE) {
+		sdf <- new("SDF", header=hb, atomblock=ab, bondblock=as.matrix(bb), datablock=datablock(x))
+		return(sdf)
+	    }
         }
         if(class(x)=="SDF") {
-                return(.atomsubset(x, atomrows))
+	    return(.atomsubset(x, atomrows))
         }
         if(class(x)=="SDFset") {
-                ids <- cid(x)
-                sdflist <- lapply(cid(x), function(y) atomsubset(sdfset[[y]], atomrows[[y]]))
-                names(sdflist) <- ids
-                sdfset <- as(sdflist, "SDFset")
-                return(sdfset)
+	    ids <- cid(x)
+	    sdflist <- lapply(cid(x), function(y) atomsubset(sdfset[[y]], atomrows[[y]]))
+	    names(sdflist) <- ids
+	    sdfset <- as(sdflist, "SDFset")
+	    return(sdfset)
         }
+    }
 }
+
 ## Usage: 
-# atomsubset(sdfset[[1]], atomrows=1:18)
-# atomsubset(sdfset[1:2], atomrows=list(CMP1=1:18, CMP2=1:12))
+# atomsubset(sdfset[[1]], atomrows=1:18, type="new")
+# atomsubset(sdfset[1:2], atomrows=list(CMP1=1:18, CMP2=1:12), type="new")
 
 #################################
 ## (5.7) String Search Method ##
@@ -1502,8 +1506,10 @@ grepSDFset <- function(pattern, x, field="datablock", mode="subset", ignore.case
 ## (6) Plotting Methods ##
 ##########################
 ## Plot single CMP Structure
-plotStruc <- function(sdf, atomcex=1.2, atomnum=FALSE, no_print_atoms=c("C"), noHbonds=TRUE, bondspacer=0.12, ...) {
-        toplot <- list(atomblock=cbind(atomblock(sdf)[,c(1:2)], as.matrix(bonds(sdf, type="bonds")[,-1])), bondblock=as.matrix(as.data.frame(bondblock(sdf))[,1:3]))
+plotStruc <- function(sdf, atomcex=1.2, atomnum=FALSE, no_print_atoms=c("C"), noHbonds=TRUE, bondspacer=0.12, colbonds=NULL, bondcol="red", ...) {
+        toplot <- list(atomblock=cbind(atomblock(sdf)[,c(1:2)], as.matrix(bonds(sdf, type="bonds")[,-1])), bondblock=cbind(as.matrix(as.data.frame(bondblock(sdf))[,1:3]), bondcol=1))
+	## Add bond color
+	toplot[[2]][, "bondcol"] <- toplot[[2]][,"bondcol"] + as.numeric((toplot[[2]][,"C1"] %in% colbonds) & (toplot[[2]][,"C2"] %in% colbonds))
 	## Create empty plot with proper dimensions
 	plot(toplot[[1]], type="n", axes=F, xlab="", ylab="", ...)
 	## Remove C-hydrogens including their bonds 
@@ -1516,31 +1522,32 @@ plotStruc <- function(sdf, atomcex=1.2, atomnum=FALSE, no_print_atoms=c("C"), no
                 toplot[[1]] <- as.matrix(rbind(toplot[[1]], nonbonded))
 	}	
 	## Plot bonds
+	z <- toplot[[2]][, "bondcol"]; z[z==2] <- bondcol # Stores bond coloring data
 	for(i in seq(along=toplot[[2]][,1])) {
 		x <- toplot[[1]][gsub("*.*_", "", rownames(toplot[[1]])) %in% toplot[[2]][i,1:2],1]
 		y <- toplot[[1]][gsub("*.*_", "", rownames(toplot[[1]])) %in% toplot[[2]][i,1:2],2]
 		## Plot single bonds
 		if(toplot[[2]][i,3]==1) {
-			lines(x=x, y=y, lty=1, lwd=3) 
+			lines(x=x, y=y, lty=1, lwd=3, col=z[i]) 
 		} 
 		## Plot double bonds
 		if(toplot[[2]][i,3]==2) {
 			rslope <- (atan(diff(y)/diff(x))*180/pi)/90
-			lines(x=x-rslope*bondspacer, y=y+(1-abs(rslope))*bondspacer, lty=1, lwd=3)
-			lines(x=x+rslope*bondspacer, y=y-(1-abs(rslope))*bondspacer, lty=1, lwd=3)
+			lines(x=x-rslope*bondspacer, y=y+(1-abs(rslope))*bondspacer, lty=1, lwd=3, col=z[i])
+			lines(x=x+rslope*bondspacer, y=y-(1-abs(rslope))*bondspacer, lty=1, lwd=3, col=z[i])
 		}
 		## Plot triple bonds
 		if(toplot[[2]][i,3]==3) {
 			rslope <- (atan(diff(y)/diff(x))*180/pi)/90
 			bondspacer <- bondspacer * 2
-			lines(x=x, y=y, lty=1, lwd=3) 
-			lines(x=x-rslope*bondspacer, y=y+(1-abs(rslope))*bondspacer, lty=1, lwd=3)
-			lines(x=x+rslope*bondspacer, y=y-(1-abs(rslope))*bondspacer, lty=1, lwd=3)
+			lines(x=x, y=y, lty=1, lwd=3, col=z[i]) 
+			lines(x=x-rslope*bondspacer, y=y+(1-abs(rslope))*bondspacer, lty=1, lwd=3, col=z[i])
+			lines(x=x+rslope*bondspacer, y=y-(1-abs(rslope))*bondspacer, lty=1, lwd=3, col=z[i])
 		}
 	}
 	## Exclude certain atoms from being printed
 	exclude <- paste("(^", no_print_atoms, "_)", sep="", collapse="|")
-	labelMA <- toplot[[1]][!grepl(exclude, rownames(toplot[[1]])), ]
+	labelMA <- toplot[[1]][!grepl(exclude, rownames(toplot[[1]])), , drop=FALSE] # Added July 31, 2012: 'drop=FALSE'
         ## Add charges 
 	charge <- c("0"="", "3"="3+", "2"="2+", "1"="+", "-1"="-", "-2"="2-", "-3"="3-")
         charge <- charge[as.character(labelMA[,"charge"])]

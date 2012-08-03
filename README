@@ -1,4 +1,7 @@
 changelog
+	version 2.8.1
+		- substructure viewing support
+	
 	version 2.7.2
 		- updated 'atomsubset' function
 	

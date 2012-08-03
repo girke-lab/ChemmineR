@@ -13,7 +13,7 @@ Plots compound structure(s) for molecules stored in SDF and SDFset containers.
 
 ## Less important for user 
 plotStruc(sdf, atomcex = 1.2, atomnum = FALSE, no_print_atoms = c("C"),
-          noHbonds = TRUE, bondspacer = 0.12, ...)
+          noHbonds = TRUE, bondspacer = 0.12, colbonds=NULL, bondcol="red", ...)
 }
 
 \arguments{
@@ -34,6 +34,14 @@ If \code{TRUE}, then the C-hydrogens and their bonds - explicitly defined in an 
 }
   \item{bondspacer}{
 Numeric value specifying the plotting distance for double/triple bonds.
+}
+  \item{colbonds}{
+Highlighting of subgraphs in main structure by providing a numeric vector of atom numbers, here position index in atom block. 
+The bonds of connected atoms will be plotted in the color provided under \code{bondcol}.
+}
+  \item{bondcol}{
+A character or numeric vector of length one to specify the color to use for substructure highlighting under \code{colbonds}.
+
 }
 \item{\dots}{
 Arguments to be passed to/from other methods.
@@ -83,6 +91,10 @@ plotStruc(sdfset[[1]])
 
 ## Plot several compounds structures
 plot(sdfset[1:4])
+
+## Highlighting substructures (here all rings)
+myrings <- as.numeric(gsub(".*_", "", unique(unlist(rings(sdfset[1])))))
+plot(sdfset[1], colbonds=myrings) 
 
 ## Customize plot 
 plot(sdfset[1:4], griddim=c(2,2), print_cid=letters[1:4], print=FALSE, noHbonds=FALSE)
