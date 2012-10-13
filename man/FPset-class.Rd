@@ -66,6 +66,7 @@ showClass("FPset")
 ## Instance of FPset class
 data(apset)
 (fpset <- desc2fp(apset))
+view(fpset)
 
 ## Class usage 
 fpset[1:4] # behaves like a list
