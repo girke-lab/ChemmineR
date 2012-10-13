@@ -1009,15 +1009,19 @@ db.explain <- function(desc)
 
 ## Load PubChem's substructure dictionary from data dir of library 
 data(pubchemFPencoding); pubchemFPencoding <- pubchemFPencoding 
-fp2bit <- function(x, type=2, fptag="PUBCHEM_CACTVS_SUBSKEYS") {
+fp2bit <- function(x, type=3, fptag="PUBCHEM_CACTVS_SUBSKEYS") {
 	## Covert base 64 strings to matrix
 	if(class(x)=="SDFset") {
 		blockmatrix <- datablock2ma(datablocklist=datablock(x))
+		fp <- blockmatrix[, fptag]
 	}
 	if(class(x)=="matrix") { 
 		blockmatrix <- x
+		fp <- blockmatrix[, fptag]
 	}
-	fp <- blockmatrix[, fptag]
+	if(class(x)=="character") { 
+		fp <- x
+	}
 	fpma <- unlist(strsplit(fp, ""))
 	fpma <- matrix(fpma, length(fp), nchar(fp[1]), byrow=TRUE)
 	fpma <- fpma[, 1:154] # remove padding signs '='
@@ -1041,25 +1045,53 @@ fp2bit <- function(x, type=2, fptag="PUBCHEM_CACTVS_SUBSKEYS") {
 	if(type==2) {
                 return(fpbitma)
         }
+	if(type==3) {
+                return(as(fpbitma, "FPset"))
+        }
 }
 
 ## Fingerprint similarity search function 
-fpSim <- function(x, y, sorted=TRUE) {
-	if(!is.vector(x)) stop("x needs to be vector")
-        if(!any(c(is.vector(y), is.matrix(y)))) stop("y needs to be vector or matrix")
+fpSim <- function(x, y, sorted=TRUE, method="Tanimoto", cutoff=0, top="all", alpha=1, beta=1, ...) {
+	## Predefined similarity methods
+	if(class(method)=="character") {
+	 	if(method=="Tanimoto" | method=="tanimoto") method <- function(a,b,c,d) c/(a+b+c)
+	}
+	if(class(method)=="character") {
+	 	if(method=="Euclidean" | method=="euclidean") method <- function(a,b,c,d) sqrt((c+d)/(a+b+c+d))
+	}
+	if(class(method)=="character") {
+	 	if(method=="Tversky" | method=="tversky") method <- function(a,b,c,d) c/(alpha*a + beta*b + c)
+	}
+	if(class(method)=="character") {
+	 	if(method=="Dice" | method=="dice") method <- function(a,b,c,d) 2*c/(a + c + b + c)
+	}
+	## Check for valid inputs
+	if(!any(c(is.vector(x), class(x)=="FP", class(x)=="FPset" & length(x)==1))) stop("x needs to be object of class FP, FPset of length one, or vector")
+        if(!any(c(is.vector(y), is.matrix(y), class(y)=="FP", class(y)=="FPset"))) stop("y needs to be object of class FP/FPset, vector or matrix")
+	## Convert FP/FPset inputs into vector/matrix format
+	if(class(x)=="FP") x <- as.numeric(x)
+	if(class(x)=="FPset") x <- as.numeric(x[[1]])
+	if(class(y)=="FP") y <- as.numeric(y)
+	if(class(y)=="FPset") y <- as.matrix(y)
+        ## Computate similarities
 	if(class(y)=="matrix") {
 		c <- colSums((t(y) + x) == 2)
+		d <- colSums((t(y) + x) == 0)
 		b <- rowSums(y) - c
 	} else {
 		c <- sum(x + y == 2)
+		d <- sum(x + y == 0)
 		b <- sum(y) - c
 	}
 	a <- sum(x) - c
 	if(sorted==TRUE) {
-		return(rev(sort(c/(c+a+b))))
+                tmp <- rev(sort(method(a,b,c,d)))
+                if(top!="all") tmp <- tmp[1:top]
+		return(tmp[tmp>=cutoff])
 	}
 	if(sorted==FALSE) {
-		return(c/(c+a+b))
+		tmp <- method(a,b,c,d)
+                return(tmp[tmp>=cutoff])
 	}
 }
 

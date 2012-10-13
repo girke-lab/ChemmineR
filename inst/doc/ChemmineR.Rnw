@@ -239,6 +239,7 @@ The following list gives an overview of the most important S4 classes, methods a
                       \item Atom frequencies: \Rfunction{atomcountMA, atomcount}
                       \item Molecular weight: \Rfunction{MW}
                       \item Molecular formula: \Rfunction{MF}
+                      \item ...
                   \end{itemize}
 
             \item Compound structure depictions
@@ -253,6 +254,8 @@ The following list gives an overview of the most important S4 classes, methods a
         \begin{itemize}
                 \item \Rclass{AP}: container for atom pair descriptors of a single molecule
                 \item \Rclass{APset}: container for many AP objects; most important structure descriptor container for end user 
+                \item \Rclass{FP}: container for fingerprint of a single molecule
+                \item \Rclass{FPset}: container for fingerprints of many molecules, most important structure descriptor container for end user 
         \end{itemize}
 
 \noindent \textit{Functions/Methods}
@@ -276,9 +279,8 @@ The following list gives an overview of the most important S4 classes, methods a
 
             \item Structure Similarity comparisons and Searching
                   \begin{itemize}
-                      \item Compute pairwise similarities : \Rfunction{cmp.similarity}
-                      \item Search APset database: \Rfunction{cmp.search}
-                      \item Compute pairwise similarities : \Rfunction{cmp.similarity}
+                      \item Compute pairwise similarities : \Rfunction{cmp.similarity, fpSim}
+                      \item Search APset database: \Rfunction{cmp.search, fpSim}
                   \end{itemize}
                       
             \item AP-based Structure Similarity Clustering
@@ -430,14 +432,14 @@ read.SDFindex(file="test.sdf", index=indexDFsub, type="file", outfile="sub.sdf")
 \noindent Read AP/APFP strings from file into \Robject{APset} or \Robject{FP} object:  
 <<eval=FALSE, keep.source=TRUE>>=
 apset <- read.AP(x="matrix.xls", type="ap", colid="AP") 
-apfp <- read.AP(x="matrix.xls", type="apfp", colid="APFP")
+apfp <- read.AP(x="matrix.xls", type="fp", colid="APFP")
 @
 
 \noindent Alternatively, one can provide the AP/APFP strings in a named character vector:
 <<eval=FALSE, keep.source=TRUE>>=
 apset <- read.AP(x=sdf2ap(sdfset[1:20], type="character"), type="ap")
-apfp <- read.AP(x=desc2fp(x=sdf2ap(sdfset[1:20]), descnames=1024, 
-                type="character"), type="apfp")
+fpchar <- desc2fp(sdf2ap(sdfset[1:20]), descnames=1024, type="character")
+fpset <- as(fpchar, "FPset")
 @
 
 \section{Working with SDF/SDFset Classes}
@@ -766,7 +768,7 @@ cmp.search(apset, apset["650065"], type=2, cutoff = 0.3, quiet=TRUE)
 @
 
 \subsection{Atom Pair Fingerprints}
-Atom pairs can be converted into binary atom pair fingerprints of fixed length. Computations on this more compact data structure are more time and memory efficient than on their more complex atom pair counterparts. The function \Rfunction{desc2fp} generates fingerprints from descriptor vectors of variable length such as atom pairs stored in \Rclass{APset} or \Rclass{list} containers. The obtained fingerprints can be used for structure similarity comparisons, searching and clustering. \\ 
+Atom pairs can be converted into binary atom pair fingerprints of fixed length. Computations on this compact data structure are more time and memory efficient than on their relatively complex atom pair counterparts. The function \Rfunction{desc2fp} generates fingerprints from descriptor vectors of variable length such as atom pairs stored in \Rclass{APset} or \Rclass{list} containers. The obtained fingerprints can be used for structure similarity comparisons, searching and clustering. \\ 
 
 \noindent Create atom pair sample data set:
 <<eval=FALSE, keep.source=TRUE>>=
@@ -775,60 +777,73 @@ sdfset <- sdfsample[1:10]
 apset <- sdf2ap(sdfset)
 @
 
-\noindent Compute atom pair fingerprint matrix using internal atom pair selection containing the 4096 most common atom pairs identified in DrugBank's compound collection. For details see \Rclass{?apfp}. The following example uses from this set the 1024 most frequent atom pairs:
+\noindent Compute atom pair fingerprint database using internal atom pair selection containing the 4096 most common atom pairs identified in DrugBank's compound collection. For details see \Rclass{?apfp}. The following example uses from this set the 1024 most frequent atom pairs:
 <<eval=FALSE, keep.source=TRUE>>=
-apfpset <- desc2fp(x=apset, descnames=1024, type="matrix")
+fpset <- desc2fp(apset, descnames=1024, type="FPset")
 @
 
-\noindent Alternatively, one can provide any custom atom pair selection. Here, the 1024 most common ones in apset object: 
+\noindent Alternatively, one can provide any custom atom pair selection. Here, the 1024 most common ones in \Robject{apset}: 
 <<eval=FALSE, keep.source=TRUE>>=
 fpset1024 <- names(rev(sort(table(unlist(as(apset, "list")))))[1:1024])
-apfpset <- desc2fp(x=apset, descnames=fpset1024, type="matrix")
+fpset <- desc2fp(apset, descnames=fpset1024, type="FPset")
 @
 
 \noindent A more compact way of storing fingerprints is as character values:
 <<eval=FALSE, keep.source=TRUE>>=
-apfpchar <- desc2fp(x=apset, descnames=1024, type="character")
+fpchar <- desc2fp(x=apset, descnames=1024, type="character")
+fpchar <- as.character(fpset) 
 @
 
-\noindent Converting character fingerprints back to a matrix:
+\noindent Converting a fingerprint database to a matrix and vice versa:
 <<eval=FALSE, keep.source=TRUE>>=
-apfpma <- matrix(as.numeric(unlist(strsplit(apfpchar, ""))), length(apfpchar),
-                 nchar(apfpchar[1]), byrow=TRUE, dimnames=list(names(apfpchar),
-                 1:nchar(apfpchar[1])))
+fpma <- as.matrix(fpset) 
+fpset <- as(fpma, "FPset")
 @
 
 \noindent Similarity searching and returning Tanimoto similarity coefficients:
 <<eval=FALSE, keep.source=TRUE>>=
-fpSim(x=apfpset[1,], y=apfpset)
+fpSim(fpset[1], fpset, method="Tanimoto")
+@
+
+\noindent Under \Rfunarg{method} one can choose from several predefined similarity measures including \Rfunarg{Tanimoto} (default), \Rfunarg{Euclidean}, \Rfunarg{Tversky} or \Rfunarg{Dice}. Alternatively, one can pass on custom similarity functions.
+<<eval=FALSE, keep.source=TRUE>>=
+fpSim(fpset[1], fpset, method="Tversky", cutoff=0.4, top=4, alpha=0.5, beta=1)
+@
+
+\noindent Example for using a custom similarity function:
+<<eval=FALSE, keep.source=TRUE>>=
+myfct <- function(a, b, c, d) c/(a+b+c+d)
+fpSim(fpset[1], fpset, method=myfct) 
 @
 
 \noindent Clustering example:
 <<eval=FALSE, keep.source=TRUE>>=
-simMAap <- sapply(rownames(apfpset), function(x) fpSim(x=apfpset[x,], apfpset, sorted=FALSE))
+simMAap <- sapply(cid(apfpset), function(x) fpSim(x=apfpset[x], apfpset, sorted=FALSE))
 hc <- hclust(as.dist(1-simMAap), method="single")
 plot(as.dendrogram(hc), edgePar=list(col=4, lwd=2), horiz=TRUE)
 @
 
 \subsection{Pairwise Compound Comparisons with PubChem Fingerprints}
-\noindent The \Rfunction{fpSim} function computes the Tanimoto coefficients for pairwise comparisons of binary fingerprints. For this data type, $c$ is the number of "on-bits" common in both compounds, and $a$ and $b$ are the numbers of their unique "on-bits". Currently, the PubChem fingerprints need to be provided (here PubChem's SD files) and cannot be computed from scratch in \Rpackage{ChemmineR}. The PubChem fingerprint specifications can be loaded with \Rfunction{data(pubchemFPencoding)}.\\
+\noindent The \Rfunction{fpSim} function computes the similarity coefficients (\textit{e.g.} Tanimoto) for pairwise comparisons of binary fingerprints. For this data type, $c$ is the number of "on-bits" common in both compounds, and $a$ and $b$ are the numbers of their unique "on-bits". Currently, the PubChem fingerprints need to be provided (here PubChem's SD files) and cannot be computed from scratch in \Rpackage{ChemmineR}. The PubChem fingerprint specifications can be loaded with \Rfunction{data(pubchemFPencoding)}.\\
 
-\noindent Convert base 64 encoded PubChem fingerprints to character vector or binary matrix:
+\noindent Convert base 64 encoded PubChem fingerprints to \Rclass{character} vector, \Rclass{matrix} or \Rclass{FPset} object:
 <<eval=TRUE, keep.source=TRUE>>=
 cid(sdfset) <- sdfid(sdfset)
-fpset <- fp2bit(x=sdfset, type=1) 
-fpset <- fp2bit(x=sdfset, type=2)
+fpset <- fp2bit(sdfset, type=1) 
+fpset <- fp2bit(sdfset, type=2)
+fpset <- fp2bit(sdfset, type=3)
+fpset
 @
 
 \noindent Pairwise compound structure comparisons:
 <<eval=TRUE, keep.source=TRUE>>=
-fpSim(x=fpset[1,], y=fpset[2,])
+fpSim(fpset[1], fpset[2])
 @
 
 \subsection{Similarity Searching with PubChem Fingerprints}
 Similarly, the \Rfunction{fpSim} function provides search functionality for PubChem fingerprints:
 <<eval=TRUE, keep.source=TRUE>>=
-fpSim(x=fpset["650065",], y=fpset)[1:6] # x is query and y is fingerprint database
+fpSim(fpset["650065"], fpset, method="Tanimoto", cutoff=0.6, top=6) 
 @
 
 \subsection{Visualize Similarity Search Results}
@@ -985,7 +1000,7 @@ plot(as.dendrogram(hc), edgePar=list(col=4, lwd=2), horiz=T)
 
 \noindent Instead of atom pairs one can use PubChem's fingerprints for clustering: 
 <<fp_hclust, eval=FALSE, keep.source=TRUE>>=
-simMA <- sapply(rownames(fpset), function(x) fpSim(x=fpset[x,], fpset, sorted=FALSE)) 
+simMA <- sapply(cid(fpset), function(x) fpSim(fpset[x], fpset, sorted=FALSE)) 
 hc <- hclust(as.dist(1-simMA), method="single")  
 plot(as.dendrogram(hc), edgePar=list(col=4, lwd=2), horiz=TRUE)
 @

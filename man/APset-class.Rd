@@ -58,7 +58,7 @@ Thomas Girke
 }
 
 \seealso{
-Related classes: SDF, SDFset, SDFstr, AP. 
+Related classes: SDF, SDFset, SDFstr, AP, FPset, FP. 
 
 Functions: \code{SDF2apcmp}, \code{apset2descdb}, \code{cmp.search}, \code{cmp.similarity}
 }

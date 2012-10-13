@@ -7,14 +7,14 @@ Convert base 64 fingerprints to binary
 The function converts the base 64 encoded PubChem fingerprints to a binary \code{matrix} or a \code{character} vector. If applied to a \code{SDFset} object, then its data block needs to contain the PubChem fingerprint information.
 }
 \usage{
-fp2bit(x, type = 2, fptag = "PUBCHEM_CACTVS_SUBSKEYS")
+fp2bit(x, type = 3, fptag = "PUBCHEM_CACTVS_SUBSKEYS")
 }
 \arguments{
   \item{x}{
-Object of class \code{SDFset} or \code{matrix}
+Object of class \code{SDFset}, \code{matrix} or \code{character}
 }
   \item{type}{
-If set to \code{1}, the results are returned as binary \emph{matrix}. If set to \code{2} (default), the results are returned as \code{character} strings in a named \emph{vector}. 
+If set to \code{1}, the results are returned as binary \code{matrix}. If set to \code{2}, the results are returned as \code{character} strings in a named \emph{vector}. If set to \code{3} (default), the results are returned as \code{FPset} object. 
 }
   \item{fptag}{
 Name tag in SDF data block where the PubChem fingerprints are stored. Default is set to "PUBCHEM_CACTVS_SUBSKEYS".
@@ -24,7 +24,7 @@ Name tag in SDF data block where the PubChem fingerprints are stored. Default is
 ...
 }
 \value{
-Returns results as binary \code{matrix} when \code{type=2} or as \code{character} strings stored in a named \code{vector} when \code{type=1}.
+\code{matrix}, \code{character} or \code{FPset}
 }
 \references{
 See PubChem fingerprint specification at: ftp://ftp.ncbi.nih.gov/pubchem/specifications/pubchem_fingerprints.txt
@@ -40,18 +40,17 @@ Functions: \code{fpSim}
 data(sdfsample); sdfset <- sdfsample
 cid(sdfset) <- sdfid(sdfset)
 
-## Convert base 64 encoded fingerprints to character vector or binary matrix
-fpset <- fp2bit(x=sdfset, type=1)
-fpset <- fp2bit(x=sdfset, type=2)
+## Convert base 64 encoded fingerprints to FPset object
+fpset <- fp2bit(sdfset)
 
 ## Pairwise compound structure comparisons
-fpSim(x=fpset[1,], y=fpset[2,]) 
+fpSim(fpset[1], fpset[2]) 
 
 ## Structure similarity searching: x is query and y is fingerprint database
-fpSim(x=fpset[1,], y=fpset) 
+fpSim(x=fpset[1], y=fpset, method="Tanimoto", cutoff=0, top="all") 
 
 ## Compute fingerprint based Tanimoto similarity matrix 
-simMA <- sapply(rownames(fpset), function(x) fpSim(x=fpset[x,], fpset, sorted=FALSE)) 
+simMA <- sapply(cid(fpset), function(x) fpSim(x=fpset[x], fpset, sorted=FALSE)) 
 
 ## Hierarchical clustering with simMA as input
 hc <- hclust(as.dist(1-simMA), method="single")

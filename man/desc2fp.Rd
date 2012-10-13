@@ -7,17 +7,17 @@ Fingerprints from descriptor vectors
 Generates fingerprints from descriptor vectors such as atom pairs stored in \code{APset} or \code{list} containers. The obtained fingerprints can be used for structure similarity comparisons, searching and clustering. Due to their compact size, computations on fingerprints are often more time and memory efficient than on their much more complex atom pair counterparts.
 }
 \usage{
-desc2fp(x, descnames, type = "matrix")
+desc2fp(x, descnames=1024, type = "FPset")
 }
 \arguments{
   \item{x}{
 Object of classe \code{APset} or \code{list} of vectors
 }
   \item{descnames}{
-Descriptor set to consider for fingerprint encoding. If a single value from 1-4096 is provided then the function uses the corresponding number of the most frequend atom pairs stored in the \code{apfp} data set provided by the package. Alternatively, one can provide here any custom atom pair selection in form of a \code{character} vector.
+Descriptor set to consider for fingerprint encoding. If a single value from 1-4096 is provided then the function uses the corresponding number of the most frequent atom pairs stored in the \code{apfp} data set provided by the package. Alternatively, one can provide here any custom atom pair selection in form of a \code{character} vector.
 }
   \item{type}{
-return fingerprint set as \code{matrix} or \code{character} vectors 
+return fingerprint set as \code{FPset}, \code{matrix} or \code{character} vector 
 }
 }
 \details{
@@ -52,26 +52,25 @@ apset <- sdf2ap(sdfset)
 ## selection containing 4096 most common atom pairs in DrugBank.
 ## For details see ?apfp. The following example uses from this 
 ## set the 1024 most frequent atom pairs: 
-apfpset <- desc2fp(x=apset, descnames=1024, type="matrix")
+fpset <- desc2fp(x=apset, descnames=1024, type="FPset")
 
 ## Alternatively, one can provide any custom atom pair selection. Here
 ## 1024 most common ones in apset object.
 fpset1024 <- names(rev(sort(table(unlist(as(apset, "list")))))[1:1024])
-apfpset2 <- desc2fp(x=apset, descnames=fpset1024, type="matrix")
+fpset2 <- desc2fp(x=apset, descnames=fpset1024, type="FPset")
 
 ## A more compact way of storing fingerprints is as character values
-apfpchar <- desc2fp(x=apset, descnames=1024, type="character")
+fpchar <- desc2fp(x=apset, descnames=1024, type="character")
 
-## Converting character fingerprints back to matrix
-apfpma <- matrix(as.numeric(unlist(strsplit(apfpchar, ""))), length(apfpchar), 
-                 nchar(apfpchar[1]), byrow=TRUE, dimnames=list(names(apfpchar), 
-                 1:nchar(apfpchar[1])))
+## Convert character fingerprints back to FPset or matrix
+fpset <- as(fpchar, "FPset")
+fpma <- as.matrix(fpset)
 
 ## Similarity searching returning Tanimoto similarity coefficients
-fpSim(x=apfpset[1,], y=apfpset)
+fpSim(x=fpset[1], y=fpset)
 
 ## Clustering example
-simMAap <- sapply(rownames(apfpset), function(x) fpSim(x=apfpset[x,], apfpset, sorted=FALSE)) 
+simMAap <- sapply(cid(fpset), function(x) fpSim(x=fpset[x], fpset, sorted=FALSE)) 
 hc <- hclust(as.dist(1-simMAap), method="single")
 plot(as.dendrogram(hc), edgePar=list(col=4, lwd=2), horiz=TRUE)
 }

@@ -5,7 +5,7 @@ import(methods, graphics, stats, RCurl)
 ## S4 Classes
 ## Source: AllClasses.R
 exportClasses(
-    "SDFstr", "SDF", "SDFset", "AP", "APset"
+    "SDFstr", "SDF", "SDFset", "AP", "APset", "FP", "FPset"
 )
 
 ## Methods
@@ -15,7 +15,7 @@ exportMethods(
     "sdfstr2list<-", "SDFset2SDF<-", "cid<-", 
     "header<-", "atomblock<-", "bondblock<-", "datablock<-",
     "[", "[[", "[<-", "[[<-", "coerce",
-    "show", "length", "c", "plot", 
+    "show", "length", "c", "plot", "as.matrix", 
     "header", "atomblock", "bondblock", "datablock", "view",
     "cid", "sdfid", "atomcount", "datablocktag",
     

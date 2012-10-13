@@ -663,7 +663,7 @@ sdf2ap <- function(sdfset, type="AP") {
 }
 
 ## Create AP Fingerprints
-desc2fp <- function(x, descnames, type="matrix") {
+desc2fp <- function(x, descnames=1024, type="FPset") {
 	if(length(descnames) == 1) {
 		data(apfp)
 		descnames <- as.character(apfp$AP)[1:descnames]
@@ -678,6 +678,9 @@ desc2fp <- function(x, descnames, type="matrix") {
 	} else {
 		stop("x needs to be of class APset or list")
 	}
+        if(type=="FPset") {
+                return(as(apfp, "FPset"))
+        }
         if(type=="matrix") {
                 return(apfp)
         }
@@ -737,7 +740,7 @@ setReplaceMethod(f="[[", signature="APset", definition=function(x, i, value) {
 	return(x)
 })
 
-## Behavior of "[[" operator for SDFset to convert single SDFset component to SDF 
+## Behavior of "[[" operator for APset to convert single APset component to AP
 setMethod(f="[[", signature="APset", definition=function(x, i, ..., drop) {
 	if(is.character(i)) { i <- which(x@ID %in% i) }
 	return(new("AP", AP=x@AP[[i]]))                 
@@ -783,7 +786,7 @@ setMethod(f="show", signature="AP",
 })
 
 ## Coerce Methods for APset Class
-## APset to list with many SDF objects
+## APset to list with many AP objects
 setAs(from="APset", to="list",
         def=function(from) {
                 ap(from)
@@ -803,18 +806,135 @@ setAs(from="APset", to="AP",
 		return(tmp)
 })
 setMethod(f="view", signature="APset", definition=function(x) { as(x, "AP") })
+# view(apset)
 
 ## Coerce APset to old list-style descriptor database used by search/cluster functions
 apset2descdb <- function(apset) {
                 list(descdb=ap(apset), cids=cid(apset), sdfsegs=NULL, source="SDFset", type="SDFset")
 }
 
+#######################################################
+## (5) Class and Method Definitions for FP and FPset ##
+#######################################################
+## Define FP/FPset classes
+setClass("FP", representation(fp="numeric"))
+setClass("FPset", representation(fpma="matrix"))
+
+## Methods to return FPSet as vector or matrix, respectively
+setMethod(f="as.vector", signature="FP", definition=function(x) {return(x@fp)})
+setMethod(f="as.numeric", signature="FP", definition=function(x) {return(x@fp)})
+setMethod(f="as.character", signature="FP", definition=function(x) {return(paste(x@fp, collapse=""))})
+setMethod(f="as.matrix", signature="FPset", definition=function(x) {return(x@fpma)})
+setMethod(f="as.character", signature="FPset", definition=function(x) {sapply(rownames(x@fpma), function(y) paste(x@fpma[y,], collapse=""))})
+
+## Constructor methods
+## Numeric vector to FP with: as(myvector, "FP")
+setAs(from="numeric", to="FP",  
+        def=function(from) {
+		new("FP", fp=from)
+})
+## Matrix to FPset with: as(mymatrix, "FPset")
+setAs(from="matrix", to="FPset",  
+        def=function(from) {
+		new("FPset", fpma=from)
+})
+
+## Character to FPset with: as(mychar, "FPset")
+setAs(from="character", to="FPset",  
+        def=function(from) {
+		read.AP(from, type="fp")
+})
+
+## Accessor methods for FPset
+## Note: generic for cid() is defined under SDFset class section.
+setMethod(f="cid", signature="FPset", definition=function(x) { return(rownames(x@fpma)) })
+
+## Replacement method for ID component of FPset using accessor methods.
+setReplaceMethod(f="cid", signature="FPset", definition=function(x, value) {
+	rownames(x@fpma) <- value 
+	if(any(duplicated(rownames(x@fpma)))) { 
+		warning("The values in the CMP ID slot are not unique anymore. To fix this, run: cid(fpset) <- makeUnique(cid(fpset))")
+	}
+	return(x)
+})
+
+## Replacement method for FPset using "[" operator 
+## It doesn't provide here full set of expected functionalities.
+setReplaceMethod(f="[", signature="FPset", definition=function(x, i, value) {
+	x@fpma[i,] <- value
+	return(x)
+})
+
+## Behavior of "[" operator for FPset 
+setMethod(f="[", signature="FPset", definition=function(x, i, ..., drop) {
+	if(is.logical(i)) {
+                i <- which(i)
+        }
+	x@fpma <- x@fpma[i, , drop=FALSE]                   
+	if(any(duplicated(i))) {
+		warning("The values in the CMP ID slot are not unique anymore. To fix this, run: cid(fpset) <- makeUnique(cid(fpset))")
+	}
+	return(x)
+})
+
+## Behavior of "[[" operator for FPset to convert single FPset component to FP
+setMethod(f="[[", signature="FPset", definition=function(x, i, ..., drop) {
+	if(is.character(i)) { i <- which(rownames(x@fpma) %in% i) }
+	return(new("FP", fp=x@fpma[i,]))                 
+})
+
+## Length function
+setMethod(f="length", signature="FPset",
+    definition=function(x) {
+    	return(length(as.matrix(x)[,1]))
+})
+
+## Define print behavior for FPset
+setMethod(f="show", signature="FPset", 
+	definition=function(object) {    
+	cat("An instance of a ", length(object@fpma[1,]), " bit ", "\"", class(object), "\" ", "with ", length(object@fpma[,1]), " molecules", "\n", sep="")
+})
+
+## Concatenate function for FPset
+## Note: is currently limited to 2 arguments!
+setMethod(f="c", signature="FPset", definition=function(x, y) {
+	fpma1 <- as.matrix(x)
+	fpma2 <- as.matrix(y)
+	fpma <- rbind(fpma1, fpma2)
+	fpset <- as(fpma, "FPset")
+	if(any(duplicated(cid(fpset)))) {
+		warning("The values in the CMP ID slot are not unique anymore, makeUnique() can fix this!")
+	}
+	return(fpset)
+})
+
+## Define print behavior for FP
+setMethod(f="show", signature="FP",                
+   definition=function(object) {
+         cat("An instance of ", "\"", class(object), "\"", "\n", sep="")
+         cat("<<fingerprint>>", "\n", sep="")
+         if(length(object@fp)>=20) {
+             cat(c(object@fp[1:20], "... length:", length(object@fp), "\n"))
+         } else {
+             print(object@fp)}
+})
+
+## FPset to list with many FP objects (for summary view)
+setAs(from="FPset", to="FP", 
+        def=function(from) {
+                tmp <- lapply(seq(along=from), function(x) from[[x]])
+		names(tmp) <- cid(from)
+		return(tmp)
+})
+setMethod(f="view", signature="FPset", definition=function(x) { as(x, "FP") })
+# view(fpset)
+
 ###################
-## (5) Utilities ##
+## (6) Utilities ##
 ###################
 
 #################################################
-## (5.1) Detect Invalid SDFs in SDFset Objects ##
+## (6.1) Detect Invalid SDFs in SDFset Objects ##
 #################################################
 validSDF <- function(x, Nabcol = 3, Nbbcol = 3, logic="&", checkNA=TRUE) {
         if(class(x)!="SDFset") warning("x needs to be of class SDFset")
@@ -831,7 +951,7 @@ validSDF <- function(x, Nabcol = 3, Nbbcol = 3, logic="&", checkNA=TRUE) {
 }
 
 ######################################################################
-## (5.2) Create Unique CMP Names by Appending a Counter to Duplates ##
+## (6.2) Create Unique CMP Names by Appending a Counter to Duplates ##
 ######################################################################
 makeUnique <- function(x, silent=FALSE) {
 	if(all(!duplicated(x))) {
@@ -849,9 +969,9 @@ makeUnique <- function(x, silent=FALSE) {
 }
 
 ###############################
-## (5.3) Molecule Properties ##
+## (6.3) Molecule Properties ##
 ###############################
-## (5.3.1) Atom count matrix
+## (6.3.1) Atom count matrix
 atomcountMA <- function(x, ...) {
         if(class(x)=="SDF") x <- as(x, "SDFset")
 	atomcountlist <- atomcount(x, ...) 	
@@ -863,7 +983,7 @@ atomcountMA <- function(x, ...) {
 	return(myMA)
 }
 
-## (5.3.2) Molecular weight (MW data from http://iupac.org/publications/pac/78/11/2051/)
+## (6.3.2) Molecular weight (MW data from http://iupac.org/publications/pac/78/11/2051/)
 data(atomprop); atomprop <- atomprop # Import MW data frame from /data into workspace.
 MW <- function(x, mw=atomprop, ...) {
         if(class(x)=="SDF") x <- as(x, "SDFset")
@@ -876,7 +996,7 @@ MW <- function(x, mw=atomprop, ...) {
 	return(MW)
 }
 
-## (5.3.3) Molecular formula
+## (6.3.3) Molecular formula
 MF <- function(x, ...) {
         if(class(x)=="SDF") x <- as(x, "SDFset")
 	propma <- atomcountMA(x, ...)
@@ -894,7 +1014,7 @@ MF <- function(x, ...) {
 	return(MF[-1]) # Minus one to remove duplicated entry in first row of propma
 }
 
-## (5.3.4) Ring Perception and Aromaticity Assignment
+## (6.3.4) Ring Perception and Aromaticity Assignment
 ## Implements with some modifications the exhaustive ring perception algorithm 
 ## from Hanser et al (1996). URL: http://pubs.acs.org/doi/abs/10.1021/ci960322f
 
@@ -1168,7 +1288,7 @@ rings <- function(x, upper=Inf, type="all", arom=FALSE, inner=FALSE) {
 # plot(sdfset[1], print=F, atomnum=T, no_print_atoms="H") 
 # plot(sdfset[1:4], print=F, atomnum=T, no_print_atoms="H") 
 
-## (5.3.5) Enumerate Functional Groups
+## (6.3.5) Enumerate Functional Groups
 ## (a) Generate neighbor information for each heavy atom in a molecule
 .neighbors <- function(x, type="countMA") {
         ## Input checks        
@@ -1257,9 +1377,9 @@ groups <- function(x, groups="fctgroup", type="countMA") {
 # groups(sdfset[1:4], groups="neighbors", type="all")
 
 ##############################################################
-## (5.4) Convert SDF Tail to Numeric and Character Matrices ##
+## (6.4) Convert SDF Tail to Numeric and Character Matrices ##
 ##############################################################
-## (5.4.1) Store everything in one character matrix
+## (6.4.1) Store everything in one character matrix
 datablock2ma <- function(datablocklist=datablock(sdfset), cleanup=" \\(.*", ...) {
 	if(exists("cleanup")) for(i in seq(along=datablocklist)) names(datablocklist[[i]]) <- gsub(cleanup, "", names(datablocklist[[i]])) # Required if name tags contain compound ids
         columns <- unique(unlist(lapply(seq(along=datablocklist), function(x) names(datablocklist[[x]]))))
@@ -1271,7 +1391,7 @@ datablock2ma <- function(datablocklist=datablock(sdfset), cleanup=" \\(.*", ...)
 # Usage:
 # blockmatrix <- datablock2ma(datablocklist=datablock(sdfset))
 
-## (5.4.2) Split SDF tail matrix into character and numeric matrices
+## (6.4.2) Split SDF tail matrix into character and numeric matrices
 splitNumChar <- function(blockmatrix=blockmatrix) {
 	# Define function to check for valid numeric values in a character vector
 	numberAble <- function(myvec, type=c("single", "vector"), extras = c(".", "NA")) {
@@ -1297,9 +1417,9 @@ splitNumChar <- function(blockmatrix=blockmatrix) {
 # numchar <- splitNumChar(blockmatrix=blockmatrix)
 
 #########################
-## (5.5) Bond Matrices ##
+## (6.5) Bond Matrices ##
 #########################
-## (5.5.1) Generate bond matrix from SDFset or SDF objects
+## (6.5.1) Generate bond matrix from SDFset or SDF objects
 conMA <- function(x, exclude="none") {
         ## Function for SDF object 
         .conMA <- function(x, exclude=exclude) {
@@ -1327,7 +1447,7 @@ conMA <- function(x, exclude="none") {
 # Usage:
 # conma <- conMA(sdfset[1:2], exclude=c("H"))
 
-## (5.5.2) Compute bond/charge count for each atom in SDFset or SDF objects
+## (6.5.2) Compute bond/charge count for each atom in SDFset or SDF objects
 ## This is used to add hydrogens with methods/functions atomcount, atomcountMA, MW and MF
 bonds <- function(x, type="bonds") {
 	## Input checks
@@ -1401,7 +1521,7 @@ bonds <- function(x, type="bonds") {
 # bondcount <- bonds(sdfset[1], type="addNH")) 
 
 ##########################################################################
-## (5.6) Subset SDF/SDFset Objects by Atom Index to Obtain Substructure ##
+## (6.6) Subset SDF/SDFset Objects by Atom Index to Obtain Substructure ##
 ##########################################################################
 ## Function to obtain substructure from SDF/SDFset object by providing a row
 ## index for atom block. Both atom and bond blocks will be subsetted accordingly. 
@@ -1518,7 +1638,7 @@ atomsubset <- function (x, atomrows, type="new", datablock = FALSE) {
 # atomsubset(sdfset[1:2], atomrows=list(CMP1=1:18, CMP2=1:12), type="new")
 
 ###################################
-## (5.7) Function write.SDFsplit ##
+## (6.7) Function write.SDFsplit ##
 ###################################
 ## Splits SD Files into any number of smaller SD Files                                                                   
 write.SDFsplit <- function(x, filetag, nmol) {
@@ -1537,7 +1657,7 @@ write.SDFsplit <- function(x, filetag, nmol) {
 # write.SDFsplit(x=sdfsample, filetag="myfile", nmol=10)
 
 ######################################
-## (5.8) Streaming Through SD Files ##
+## (6.8) Streaming Through SD Files ##
 ######################################
 ## Streaming function to compute descriptors for large SD Files without consuming much memory.
 ## In addition to descriptor values, it returns a line index that defines the positions of each 
@@ -1658,10 +1778,10 @@ sdfStream <- function(input, output, append=FALSE, fct, Nlines=10000, startline=
 
 
 #####################################################################
-## (5.9) Read Atom Pair String Representation from File into APset ##
+## (6.9) Read Atom Pair String Representation from File into APset ##
 #####################################################################
 ## Function to convert atom pairs (AP) or atom pair fingerprints (APFP) stored
-## as character strings to APset or FP objects (e.g. generated by sdfStream).
+## as character strings to APset or FPset objects (e.g. generated by sdfStream).
 ## Alternatively, one can provide the AP/APFP strings in a named character vector.
 read.AP <- function(x, type, colid) {
         if(type=="ap") {
@@ -1674,13 +1794,13 @@ read.AP <- function(x, type, colid) {
                 names(desclist) <- names(x)
                 return(as(desclist, "APset"))
         }
-        if(type=="apfp") {
+        if(type=="apfp" | type=="fp") {
                 if(class(x)=="character" & length(x)==1) {
                         x <- read.delim(x, colClasses="character", sep="\t", row.names=1)
                         ids <- row.names(x); x <- x[,colid]; names(x) <- ids
                 }
                 descma <- matrix(as.numeric(unlist(strsplit(x, ""))), length(x), nchar(x[1]), byrow=TRUE, dimnames=list(names(x), 1:nchar(x[1])))
-                return(descma)
+                return(as(descma, "FPset"))
         }
 }
 
@@ -1689,7 +1809,7 @@ read.AP <- function(x, type, colid) {
 # apfp <- read.AP(x="matrix.xls", type="apfp", colid="APFP")
 
 #########################################################
-## (5.10) Extract Molecules from SD File by Line Index ##
+## (6.10) Extract Molecules from SD File by Line Index ##
 #########################################################
 ## Extracts specific molecules from SD File based on a line position index computed by the sdfStream function
 read.SDFindex <- function(file, index, type="SDFset", outfile) {
@@ -1725,7 +1845,7 @@ read.SDFindex <- function(file, index, type="SDFset", outfile) {
 ## Usage: see sdfStream()
 
 #################################
-## (5.11) String Search Method ##
+## (6.11) String Search Method ##
 #################################
 ## String search function for SDFset
 grepSDFset <- function(pattern, x, field="datablock", mode="subset", ignore.case=TRUE, ...) {
@@ -1777,7 +1897,7 @@ grepSDFset <- function(pattern, x, field="datablock", mode="subset", ignore.case
 }
 
 ##########################
-## (6) Plotting Methods ##
+## (7) Plotting Methods ##
 ##########################
 ## Plot single CMP Structure
 plotStruc <- function(sdf, atomcex=1.2, atomnum=FALSE, no_print_atoms=c("C"), noHbonds=TRUE, bondspacer=0.12, colbonds=NULL, bondcol="red", ...) {
