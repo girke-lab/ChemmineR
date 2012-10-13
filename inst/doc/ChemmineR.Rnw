@@ -788,7 +788,7 @@ fpset[1:4] # behaves like a list
 fpset[[1]] # returns FP object
 length(fpset) # number of compounds
 cid(fpset) # returns compound ids
-fpset[1] <- 0 # replacement of first fingerprint to all zeros  
+fpset[10] <- 0 # replacement of 10th fingerprint to all zeros  
 cid(fpset) <- 1:length(fpset) # replaces compound ids
 c(fpset[1:4], fpset[11:14]) # concatenation of several FPset objects
 @
