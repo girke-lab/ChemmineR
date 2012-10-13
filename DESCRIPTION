@@ -1,7 +1,7 @@
 Package: ChemmineR
 Type: Package
 Title: Cheminformatics of Drug-like Small Molecule Data
-Version: 2.10.2
+Version: 2.10.3
 Date: 2012-10-12
 Author: Y. Eddie Cao, Tyler Backman, Yan Wang, Thomas Girke
 Maintainer: ChemmineR Team <see@url>

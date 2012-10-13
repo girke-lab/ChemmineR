@@ -767,6 +767,49 @@ cmp.search(apset, apset["650065"], type=1, cutoff = 0.3, quiet=TRUE)
 cmp.search(apset, apset["650065"], type=2, cutoff = 0.3, quiet=TRUE) 
 @
 
+\subsection{FP/FPset Classes for Storing Fingerprints}
+The \Rclass{FPset} class stores fingerprints of small molecules in a matrix-like representation where every molecule is encoded as a fingerprint of the same type and length. The \Rclass{FPset} container acts as a searchable database that contains the fingerprints of many molecules. The \Rclass{FP} container holds only one fingerprint. Several constructor and coerce methods are provided to populate \Rclass{FP/FPset} containers with fingerprints, while supporting any type and length of fingerprints. For instance, the function \Rfunction{desc2fp} generates fingerprints from an atom pair database stored in an \Rclass{APset}, and \Rfunction{as(matrix, "FPset")} and \Rfunction{as(character, "FPset")} construct an \Rclass{FPset} database from objects where the fingerprints are represented as \Rclass{matrix} or \Rclass{character} objects, respectively. \\
+
+\noindent Show slots of \Rclass{FPset} class:
+<<eval=TRUE, keep.source=TRUE>>=
+showClass("FPset")
+@
+     
+\noindent Instance of \Rclass{FPset} class:
+<<eval=TRUE, keep.source=TRUE>>=
+data(apset)
+(fpset <- desc2fp(apset))
+view(fpset[1:2])
+@
+     
+\noindent \Rclass{FPset} class usage:
+<<eval=TRUE, keep.source=TRUE>>=
+fpset[1:4] # behaves like a list
+fpset[[1]] # returns FP object
+length(fpset) # number of compounds
+cid(fpset) # returns compound ids
+fpset[1] <- 0 # replacement of first fingerprint to all zeros  
+cid(fpset) <- 1:length(fpset) # replaces compound ids
+c(fpset[1:4], fpset[11:14]) # concatenation of several FPset objects
+@
+     
+\noindent Construct \Rclass{FPset} class form \Rclass{matrix}:
+<<eval=TRUE, keep.source=TRUE>>=
+fpma <- as.matrix(fpset) # coerces FPset to matrix 
+as(fpma, "FPset")
+@
+
+\noindent Construct \Rclass{FPset} class form \Rclass{character vector}:
+<<eval=TRUE, keep.source=TRUE>>=
+fpchar <- as.character(fpset) # coerces FPset to character strings
+as(fpchar, "FPset") # construction of FPset class from character vector
+@
+     
+\noindent Compound similarity searching with \Rclass{FPset}: 
+<<eval=TRUE, keep.source=TRUE>>=
+fpSim(fpset[1], fpset, method="Tanimoto", cutoff=0.4, top=4)
+@
+
 \subsection{Atom Pair Fingerprints}
 Atom pairs can be converted into binary atom pair fingerprints of fixed length. Computations on this compact data structure are more time and memory efficient than on their relatively complex atom pair counterparts. The function \Rfunction{desc2fp} generates fingerprints from descriptor vectors of variable length such as atom pairs stored in \Rclass{APset} or \Rclass{list} containers. The obtained fingerprints can be used for structure similarity comparisons, searching and clustering. \\ 
 
