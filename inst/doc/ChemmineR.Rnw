@@ -63,6 +63,7 @@ options(width=80)
 
 \noindent In addition, \Rpackage{ChemmineR} offers visualization functions for compound clustering results and chemical structures. The integration of chemoinformatic tools with the R programming environment has many advantages, such as easy access to a wide spectrum of statistical methods, machine learning algorithms and graphic utilities. The first version of this package was published in \cite{Cao2008c}. Since then many additional utilities have been added to the package and many more are under development for future releases \citep{Backman2011a}. 
 
+
 \section{\textcolor{red}{Recently Added Features}}
 \markboth{Recently Added Features}{} % Only required to print section title in header field without numbering. 
 
@@ -207,6 +208,8 @@ cmp.cluster(db=apset, cutoff = c(0.65, 0.5), quiet=TRUE)[1:4,]
    # Binning clustering using variable similarity cutoffs.
 @
 
+\pagebreak
+
 \section{Overview of Classes and Functions}
 \markboth{Overview of Classes and Functions}{} % Only required to print section title in header field without numbering. 
 The following list gives an overview of the most important S4 classes, methods and functions available in the ChemmineR package. The help documents of the package provide much more detailed information on each utility. The standard R help documents for these utilities can be accessed with this syntax: \Rfunction{?function\_name} (\textit{e.g.} \Rfunction{?cid}) and \Rfunction{?class\_name-class} (\textit{e.g}. \Rfunction{?"SDFset-class"}).
@@ -291,6 +294,8 @@ The following list gives an overview of the most important S4 classes, methods a
                   \end{itemize}
         \end{itemize}
 
+\pagebreak
+
 
 \section{Importing Compounds}
 \markboth{Importing Compounds}{} % Only required to print section title in header field without numbering. 
@@ -320,6 +325,8 @@ sdfstr <- as(sdfset, "SDFstr")
 sdfstr
 as(sdfstr, "SDFset") 
 @
+
+\pagebreak
 
 \section{Export of Compounds}
 \markboth{Export of Compounds}{} % Only required to print section title in header field without numbering. 
@@ -355,6 +362,8 @@ write.SDF(sdfstr[1:4], file="sub.sdf")
 cat(unlist(as(sdfstr[1:4], "list")), file="sub.sdf", sep="\n")
 @
 
+\pagebreak
+
 \section{Splitting SD Files}
 \markboth{Splitting SD Files}{} % Only required to print section title in header field without numbering. 
 The following \Rfunction{write.SDFsplit} function allows to split SD Files into any number of smaller SD Files. This can become important when working with very big SD Files. Users should note that this function can output many files, thus one should run it in a dedicated directory!  \\
@@ -379,6 +388,8 @@ write.SDFsplit(x=sdfstr, filetag="myfile", nmol=10)
 <<eval=FALSE, keep.source=TRUE>>=
 write.SDFsplit(x=sdfset, filetag="myfile", nmol=10)
 @
+
+\pagebreak
 
 \section{Streaming Through Large SD Files}
 \markboth{Streaming Through Large SD Files}{} % Only required to print section title in header field without numbering. 
@@ -441,6 +452,8 @@ apset <- read.AP(x=sdf2ap(sdfset[1:20], type="character"), type="ap")
 fpchar <- desc2fp(sdf2ap(sdfset[1:20]), descnames=1024, type="character")
 fpset <- as(fpchar, "FPset")
 @
+
+\pagebreak
 
 \section{Working with SDF/SDFset Classes}
 \markboth{Working with SDF/SDFset Classes}{} % Only required to print section title in header field without numbering. 
@@ -531,6 +544,8 @@ as(sdfset[1:4], "list")
 as(sdfset[1:4], "SDFstr")
 @
 
+\pagebreak
+
 \section{Molecular Property Functions (Physicochemical Descriptors)}
 \markboth{Molecular Property Functions (Physicochemical Descriptors)}{} % Only required to print section title in header field without numbering. 
 \noindent Several methods and functions are available to compute basic compound descriptors, such as molecular formula (MF), molecular weight (MW), and frequencies of atoms and functional groups. In many of these functions, it is important to set \Rfunarg{addH=TRUE} in order to include/add hydrogens that are often not specified in an SD file.
@@ -596,6 +611,8 @@ numchar[[1]][1:4,]; numchar[[2]][1:4,]
 .
 @
 
+\pagebreak
+
 \section{Bond Matrices}
 \markboth{Bond Matrices}{} % Only required to print section title in header field without numbering. 
 \noindent Bond matrices provide an efficient data structure for many basic computations on small molecules. The function \Rfunction{conMA} creates this data structure from \Rclass{SDF} and \Rclass{SDFset} objects. The resulting bond matrix contains the atom labels in the row/column titles and the bond types in the data part. The labels are defined as follows: 0 is no connection, 1 is a single bond, 2 is a double bond and 3 is a triple bond.
@@ -611,6 +628,8 @@ rowSums(conMA(sdfset[[1]], exclude=c("H")))
 .
 @
 
+\pagebreak
+
 \section{Charges and Missing Hydrogens}
 \markboth{Charges and Missing Hydrogens}{} % Only required to print section title in header field without numbering. 
 \noindent 
@@ -621,6 +640,8 @@ bonds(sdfset[1:2], type="charge")
 bonds(sdfset[1:2], type="addNH")
 @
 
+\pagebreak
+
 \section{Ring Perception and Aromaticity Assignment}
 \markboth{Ring Perception and Aromaticity Assignment}{} % Only required to print section title in header field without numbering. 
 \noindent 
@@ -629,9 +650,16 @@ The function \Rfunction{rings} identifies all possible rings in one or many mole
 \vspace{0.3cm}
 \noindent The following example returns all possible rings in a \Rclass{list}. The argument \Rfunarg{upper} allows to specify an upper length limit for rings. Choosing smaller length limits will reduce the search space resulting in shortened compute times. Note: each ring is represented by a character vector of atom symbols that are numbered by their position in the atom block of the corresponding \Rclass{SDF/SDFset} object.
 <<eval=TRUE, keep.source=TRUE>>=
-rings(sdfset[1], upper=Inf, type="all", arom=FALSE, inner=FALSE)
+(ringatoms <- rings(sdfset[1], upper=Inf, type="all", arom=FALSE, inner=FALSE))
 @
-\noindent For visual inspection, the corresponding compound structure can be plotted with the same atom numbers as the rings: 
+
+\noindent For visual inspection, the corresponding compound structure can be plotted with the ring bonds highlighted in color:
+<<eval=TRUE, fig=TRUE, keep.source=TRUE>>=
+atomindex <- as.numeric(gsub(".*_", "", unique(unlist(ringatoms))))
+plot(sdfset[1], print=FALSE, colbonds=atomindex)
+@
+
+\noindent Alternatively, one can include the atom numbers in the plot: 
 <<eval=TRUE, fig=TRUE, keep.source=TRUE>>=
 plot(sdfset[1], print=FALSE, atomnum=TRUE, no_print_atoms="H")
 @
@@ -651,6 +679,8 @@ rings(sdfset[1], upper=6, type="arom", arom=TRUE, inner=FALSE)
 rings(sdfset[1:4], upper=Inf, type="count", arom=TRUE, inner=TRUE) 
 @ 
 
+\pagebreak
+
 \section{Rendering Chemical Structure Images}
 \markboth{Rendering Chemical Structure Images}{} % Only required to print section title in header field without numbering. 
 \subsection{R Graphics Device}
@@ -658,7 +688,8 @@ A new plotting function for compound structures has been added to the package re
 
 \noindent Plot compound Structures with R's graphics device:
 <<plotstruct2, eval=TRUE, fig=TRUE, keep.source=TRUE>>=
-data(sdfsample); sdfset <- sdfsample
+data(sdfsample)
+sdfset <- sdfsample
 plot(sdfset[1:4], print=FALSE) # 'print=TRUE' returns SDF summaries
 @
 
@@ -667,12 +698,18 @@ plot(sdfset[1:4], print=FALSE) # 'print=TRUE' returns SDF summaries
 plot(sdfset[1:4], griddim=c(2,2), print_cid=letters[1:4], print=FALSE, 
      noHbonds=FALSE)
 @
+
+\noindent In the following plot, the atom block position numbers in the SDF are printed next to the atom symbols (\Rfunarg{atomnum = TRUE}). For more details, consult help documentation with \Rfunction{?plotStruc} or \Rfunction{?plot}.
 <<plotstruct3, eval=TRUE, fig=TRUE, keep.source=TRUE>>=
 plot(sdfset["CMP1"], atomnum = TRUE,  noHbonds=F , no_print_atoms = "", 
      atomcex=0.8, sub=paste("MW:", MW(sdfsample["CMP1"])), print=FALSE)
 @
 
-\noindent In the above plot, the atom block position numbers in the SDF are printed next to the atom symbols (\Rfunarg{atomnum = TRUE}). For more details, consult help documentation with \Rfunction{?plotStruc} or \Rfunction{?plot}.
+\noindent Substructure highlighting by atom numbers:
+<<plotstruct4, eval=TRUE, fig=TRUE, keep.source=TRUE>>=
+plot(sdfset[1], print=FALSE, colbonds=c(22,26,25,3,28,27,2,23,21,18,8,19,20,24))
+@
+
 
 \subsection{Online with ChemMine Tools}
 Alternatively, one can visualize compound structures with a standard web browser using the online ChemMine Tools service. The service allows to display other information next to the structures using the extra argument of the \Rfunction{sdf.visualize} function. The following examples demonstrate, how one can plot and annotate structures by passing on extra data as vector of character strings, matrices or lists.  \\
@@ -705,11 +742,19 @@ sdf.visualize(sdfset[1:4], extra=extra)
 sdf.visualize(sdfset[1:4], extra=bondblock(sdfset[1:4]))
 @
 
+\pagebreak
 
 \section{Similarity Comparisons and Searching}
 \markboth{Similarity Comparisons and Searching}{} % Only required to print section title in header field without numbering. 
 \subsection{Maximum Common Substructure (MCS) Searching}
-The ChemmineR add-on package \href{http://www.bioconductor.org/packages/devel/bioc/html/fmcsR.html}{{\textcolor{blue}{fmcsR}}} provides support for identifying maximum common substructures (MCSs) and flexible MCSs among compounds. The algorithm can be used for pairwise compound comparisons, structure similarity searching and clustering. The manual describing this functionality is available \href{http://www.bioconductor.org/packages/devel/bioc/vignettes/fmcsR/inst/doc/fmcsR.pdf}{{\textcolor{blue}{here}}}. \\
+The ChemmineR add-on package \href{http://www.bioconductor.org/packages/devel/bioc/html/fmcsR.html}{{\textcolor{blue}{fmcsR}}} provides support for identifying maximum common substructures (MCSs) and flexible MCSs among compounds. The algorithm can be used for pairwise compound comparisons, structure similarity searching and clustering. The manual describing this functionality is available \href{http://www.bioconductor.org/packages/devel/bioc/vignettes/fmcsR/inst/doc/fmcsR.pdf}{{\textcolor{blue}{here}}}. The following gives a short preview of some functionalities provided by the \Rpackage{fmcsR} package. \\
+
+<<plotmcs, eval=TRUE, fig=TRUE, keep.source=TRUE>>=
+library(fmcsR)
+data(fmcstest) # Loads test sdfset object
+test <- fmcs(fmcstest[1], fmcstest[2], au=2, bu=1) # Searches for MCS with mismatches
+plotMCS(test) # Plots both query compounds with MCS in color
+@
 
 \subsection{AP/APset Classes for Storing Atom Pair Descriptors}
 The function \Rfunction{sdf2ap} computes atom pair descriptors for one or many compounds \citep{carhart1985apm, chen2002psm}. It returns a searchable atom pair database stored in a container of class \Rclass{APset}, which can be used for structural similarity searching and clustering. As similarity measure, the Tanimoto coefficient or related coefficients can be used. An \Rclass{APset} object consists of one or many \Rclass{AP} entries each storing the atom pairs of a single compound. Note: the deprecated \Rfunction{cmp.parse} function is still available which also generates atom pair descriptor databases, but directly from an SD file. Since the latter function is less flexible it may be discontinued in the future. \\
@@ -905,6 +950,8 @@ similarities <- cmp.search(apset, apset[1], type=3, cutoff = 10)
 sdf.visualize(sdfset[similarities[,1]], extra=similarities[,3])
 @
 
+\pagebreak
+
 \section{Clustering}
 \markboth{Clustering}{} % Only required to print section title in header field without numbering. 
 \subsection{Clustering Identical or Very Similar Compounds}
@@ -1056,6 +1103,8 @@ heatmap.2(1-distmat, Rowv=as.dendrogram(hc), Colv=as.dendrogram(hc),
           density.info="none", trace="none")
 @
 
+\pagebreak
+
 \section{Searching PubChem}
 \subsection{Get Compounds from PubChem by Id}
 The function \Rfunction{getIds} accepts one or more numeric PubChem compound ids
@@ -1099,6 +1148,8 @@ compounds <- searchSim(sdfset)
 compounds
 @
 
+\pagebreak
+
 \section{Format Interconversions}
 The \Rfunction{sdf2smiles} and \Rfunction{smiles2sdf} functions provide format
 interconversion between SMILES strings (Simplified Molecular Input Line Entry Specification)
@@ -1124,11 +1175,15 @@ view(sdf)
 as they rely on the ChemMine Tools web service for conversion
 with the Open Babel Open Source Chemistry Toolbox.
 
+\pagebreak
+
 \section{Version Information}
 \markboth{Version Information}{} % Only required to print section title in header field without numbering. 
 <<sessionInfo, eval=TRUE, keep.source=TRUE>>=
 sessionInfo()
 @
+
+\pagebreak
 
 \section{Funding}
 \markboth{Funding}{} % Only required to print section title in header field without numbering. 
@@ -1468,6 +1523,8 @@ This software was developed with funding from the National Science Foundation: \
 % 
 % \section*{Calculation of Physicochemical Descriptors}
 % Several functions will be available in the near future for calculating physicochemical descriptors directly in ChemmineR. Currently, users can calculate 40 common physicochemical descriptors with the online descriptor prediction tool available on ChemMine's WorkBench (\url{http://bioweb.ucr.edu/ChemMineV2/work/sdf/}).
+
+\pagebreak
 
 \section*{} % Dummy section to fix "References" link in the table-of-contents list
 \bibliography{bibtex}
