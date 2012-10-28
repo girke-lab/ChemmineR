@@ -14,7 +14,7 @@
 cmp.cluster <- function(db, cutoff, is.similarity=TRUE, save.distances=FALSE,
         use.distances=NULL, quiet=FALSE, ...)
 {
-    ## ThG: added for compatability with new S4 classes APset/AP
+    ## ThG: added for compatibility with new S4 classes APset/AP
     dbtype <- as.character(class(db))
     if(dbtype=="APset") { db <- apset2descdb(db) }
     ## ThG: end of lines
@@ -180,7 +180,7 @@ cluster.visualize <- function(db, cls, size.cutoff, distmat=NULL,
         dimensions=2, quiet=FALSE, highlight.compounds=NULL, 
         highlight.color=NULL, ...)
 {
-    ## ThG: added for compatability with new S4 classes APset/AP
+    ## ThG: added for compatibility with new S4 classes APset/AP
     dbtype <- as.character(class(db))
     if(dbtype=="APset") { db <- apset2descdb(db) }
     ## ThG: end of lines
@@ -400,3 +400,94 @@ symmetric=TRUE, quiet=FALSE)
     }
     return(cluster_id)
 }
+
+###############################
+## Jarvis-Patrick Clustering ##
+###############################
+## Added by ThG on 28-Oct-12
+## Function to perform Jarvis-Patrick clustering. The algorithm requires a
+## nearest neighbor table, which consists of 'j' nearest neighbors for each item
+## in the dataset. This information is then used to join items into clusters
+## that share at least 'k' nearest neighbors. The values for 'j' and 'k' are
+## user-defined parameters. The jarvisPatrick() function can generate the
+## nearest neighbor table for APset and FPset objects and then perform Jarvis-
+## Patrick clustering on that table. It also accepts a precomputed nearest 
+## neighbor table in form of an object of class matrix. The output is a cluster
+## vector with the item labels in the name slot and the cluster IDs in the data
+## slot. Alternatively, the function can return the nearest neighbor matrix.
+## As third parameter the user can set a minimum similarity value for generating 
+## the nearest neighbor table. The latter is an optional setting that is not part 
+## of the original Jarvis-Patrick algorithm. It allows to generate more tight 
+## clusters and minimizes some limitations of this method, such as joining unrelated
+## items when clustering small dataset.  
+jarvisPatrick <- function(x, j, k, cutoff=NA, type="cluster", ...) {      
+        ## Check inputs
+        if(!any(c("APset", "FPset", "matrix") %in% class(x))) stop("class(x) needs to be APset, FPset or matrix")
+        ## If class(x) is APset or FPset, generate nearest neighbor matrix (nnm)
+        if(any(c("APset", "FPset") %in% class(x))) {
+                if(is.na(cutoff)) { # Standard Jarvis-Patrick clustering without cutoff
+                        if(class(x)=="FPset") {
+                                nnm <- t(sapply(seq(along=x), function(y) names(fpSim(x[y], x, top=j, ...))))
+                        } 
+                        if(class(x)=="APset") {
+                                nnm <- t(sapply(seq(along=x), function(y) names(cmp.search(x, x[y], type=2, cutoff=j, quiet = TRUE, ...))))
+                        }
+                } 
+                if(is.numeric(cutoff) & cutoff <= 1) { # Non-standard Jarvis-Patrick clustering with cutoff
+                        nnm <- matrix(NA, length(x), j)
+                        if(class(x)=="FPset") {
+                                for(i in seq(along=nnm[,1])) {
+                                        tmp <- names(fpSim(x[i], x, cutoff=cutoff, top=j, ...))
+                                        nnm[i,1:length(tmp)] <- tmp
+                                }
+                        }
+                        if(class(x)=="APset") {
+                                for(i in seq(along=nnm[,1])) {
+                                        tmp <- names(cmp.search(x, x[i], type=2, cutoff=cutoff, quiet = TRUE, ...)[1:j])
+                                        nnm[i,1:length(tmp)] <- tmp
+                                }
+                        }
+                }
+                rownames(nnm) <- cid(x)
+                colnames(nnm) <- seq(along=nnm[1,])
+        }
+        if(type=="matrix") {
+                return(nnm) 
+        }
+        if(type=="cluster") {
+                ## Run Jarvis-Patrick clustering on nearest neighbor matrix (nnm)
+                ## (i) Initialize algorithm by generating numeric vector with increasing cluster numbers
+                clusters <- seq(along=nnm[,1]); names(clusters) <- rownames(nnm) 
+                "%in%" <- function(x, table) match(x, table, nomatch = 0, incomparables=NA) > 0 # Sets NAs of %in% function as incompatible entries which is required when non-standard cutoff is used.
+                for(i in seq(along=nnm[,1])) {
+                        ## (ii) Identify for each nnm row the remaining rows with at least k common neighbors
+                        nncount <- rowSums(matrix(as.character(t(nnm[i:length(nnm[,1]),])) %in% nnm[i,], length(nnm[,1])-i+1, length(nnm[1,]), byrow=TRUE)) 
+                        above <- nncount >= k
+                        ## (iii) Assign to new members always smallest cluster number to maintain assignments of previous 
+                        ##       iterations. This allows single pass through nnm and results in a single linkage like behavior.
+                        if(length(clusters[i:length(clusters)][above])!=0) {
+                                clusters[i:length(clusters)][above] <- min(clusters[i:length(clusters)][above])
+                        }
+                }
+                ## Assign continuous numbers as cluster names
+                clusterstmp <- sort(clusters)
+                tmp <- 1:length(unique(clusterstmp)); names(tmp) <- unique(clusterstmp)
+                tmp <- tmp[as.character(clusterstmp)]; names(tmp) <- names(clusterstmp)
+                clusters <- tmp[names(clusters)]
+                return(clusters)
+        }
+}
+## Usage:
+# library(ChemmineR)
+# data(apset)
+# fpset <- desc2fp(apset)
+# jarvisPatrick(x=apset, j=6, k=5)
+# jarvisPatrick(x=fpset, j=6, k=2, cutoff=0.4)
+# jarvisPatrick(x=fpset, j=2, k=2, type="matrix")
+
+
+
+
+
+
+

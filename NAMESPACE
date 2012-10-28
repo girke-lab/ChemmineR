@@ -62,6 +62,6 @@ export(
 
     ## Clustering functions
     ## Source: cluster.R
-    "cmp.cluster", "cluster.visualize" 
+    "cmp.cluster", "jarvisPatrick", "cluster.visualize" 
 )
 

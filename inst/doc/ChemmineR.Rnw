@@ -1037,6 +1037,38 @@ clusters <- cmp.cluster(db=apset, cutoff = c(0.65, 0.5, 0.3),
 load("distmat.rda") # Loads distance matrix.
 @
 
+\subsection{Jarvis-Patrick Clustering}
+The Jarvis-Patrick clustering algorithm requires a nearest neighbor table, which consists of \Rfunarg{j} nearest neighbors for each item in the data set \citep{Jarvis1973a}. This information is then used to join items into clusters that share at least \Rfunarg{k} nearest neighbors. The values for \Rfunarg{j} and \Rfunarg{k} are user-defined parameters. The \Rfunction{jarvisPatrick} function can generate the nearest neighbor table for \Rclass{APset} and \Rclass{FPset} objects and then perform Jarvis-Patrick clustering on that table. It also accepts a precomputed nearest neighbor table in form of an object of class \Rclass{matrix}. The output is a cluster \Rclass{vector} with the item labels in the name slot and the cluster IDs in the data slot. Alternatively, the function can return the nearest neighbor matrix. As third parameter the user can set a minimum similarity \Rfunarg{cutoff} value for generating the nearest neighbor table. The latter is an optional setting that is not part of the original Jarvis-Patrick algorithm. It allows to generate more tight clusters and to minimize some limitations of this method, such as joining completely unrelated items when clustering small data sets.\\
+
+\noindent Load/create sample \Rclass{APset} and \Rclass{FPset}:
+<<eval=TRUE, keep.source=TRUE>>=
+data(apset)
+fpset <- desc2fp(apset)
+@
+     
+\noindent Standard Jarvis-Patrick clustering on \Rclass{APset} and \Rclass{FPset} objects:
+<<eval=TRUE, keep.source=TRUE>>=
+jarvisPatrick(apset, j=6, k=5) # Using "APset"
+jarvisPatrick(fpset, j=6, k=5) # Using "FPset"
+@
+
+\noindent Modified Jarvis-Patrick clustering with minimum similarity \Rfunarg{cutoff} value (here Tanimoto coefficient):
+<<eval=TRUE, keep.source=TRUE>>=
+jarvisPatrick(fpset, j=6, k=2, cutoff=0.6, method="Tanimoto")
+@
+
+\noindent Output nearest neighbor table (\Rclass{matrix}):
+<<eval=TRUE, keep.source=TRUE>>=
+nnm <- jarvisPatrick(fpset, j=6, k=5, type="matrix")
+nnm[1:4,]
+@
+
+\noindent Perform clustering on precomputed nearest neighbor table:
+<<eval=TRUE, keep.source=TRUE>>=
+jarvisPatrick(nnm, j=6, k=5)
+@
+     
+
 \subsection{Multi-Dimensional Scaling (MDS)}
 To visualize and compare clustering results, the \Rfunction{cluster.visualize} function can
 be used. The function performs Multi-Dimensional Scaling (MDS) and visualizes
