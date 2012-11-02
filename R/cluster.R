@@ -17,6 +17,7 @@ cmp.cluster <- function(db, cutoff, is.similarity=TRUE, save.distances=FALSE,
     ## ThG: added for compatibility with new S4 classes APset/AP
     dbtype <- as.character(class(db))
     if(dbtype=="APset") { db <- apset2descdb(db) }
+    if(dbtype=="FPset") { db <- list(descdb=db, cids=cid(db), sdfsegs=NULL, source="FPset", type="FPset") }
     ## ThG: end of lines
     
     # see if db if file-backed
@@ -57,6 +58,13 @@ cmp.cluster <- function(db, cutoff, is.similarity=TRUE, save.distances=FALSE,
         distf <- function(i, j) {
             return(use.distances[i, j])
         }
+    } 
+    ## ThG: added to make function easier to use with new S4 classes APset/AP
+    else if (class(db$descdb) == "FPset") {
+        distf <- function(i, j) {
+            return(1-fpSim(db$descdb[[i]], db$descdb[[j]], top=1, cutoff=1-cutoff, ...))
+        }
+    ## ThG: end of lines
     } else {
         distf <- function(i,j) {
             args <- list(...)
@@ -131,29 +139,33 @@ cmp.cluster <- function(db, cutoff, is.similarity=TRUE, save.distances=FALSE,
     rownames(cluster_id) <- cluster_id[,1]
     ## ThG: added to make function easier to use with new S4 classes APset/AP
     if(dbtype=="APset") { cluster_id[,"ids"] <- db$cids[cluster_id[,"ids"]] }
+    if(dbtype=="FPset") { cluster_id[,"ids"] <- db$cids[cluster_id[,"ids"]] }
     ## ThG: end of lines
     return(cluster_id)
 }
 
-.calc.distmat <- function(descdb, quiet=FALSE, ...)
-{
-    if (!quiet) cat("calculating distance matrix\n")
-    len = length(descdb)
-    distmat <- matrix(1, ncol=len, nrow=len)
-    for (i in 1:(len-1)) {
-        distmat[i, i] <- 0
-        for (j in (i+1):len) {
-            d <- 1 - .cmp.similarity(descdb[[i]], descdb[[j]], ...)
-            distmat[i, j] <- d
-            distmat[j, i] <- d
-        }
-        prog_ratio <- i / (len - 1)
-        prog_ratio <- prog_ratio * 2 - prog_ratio * prog_ratio
-        if (! quiet)
-            .progress_bar(paste(min(prog_ratio * 100, 100), "%", collapse=""))
-    }
-    if (!quiet) cat("distance matrix is successfully generated\n")
-    return(distmat)
+.calc.distmat <- function(descdb, quiet=FALSE, ...) {
+	if(class(descdb)=="FPset") {
+    		return(1 - sapply(cid(descdb), function(x) fpSim(descdb[x], descdb, sorted=FALSE)))
+	} else { 
+  		if (!quiet) cat("calculating distance matrix\n")
+		len = length(descdb)
+		distmat <- matrix(1, ncol=len, nrow=len)
+		for (i in 1:(len-1)) {
+			distmat[i, i] <- 0
+			for (j in (i+1):len) {
+				d <- 1 - .cmp.similarity(descdb[[i]], descdb[[j]], ...)
+				distmat[i, j] <- d
+				distmat[j, i] <- d
+        		}
+        		prog_ratio <- i / (len - 1)
+        		prog_ratio <- prog_ratio * 2 - prog_ratio * prog_ratio
+        		if (! quiet)
+            		.progress_bar(paste(min(prog_ratio * 100, 100), "%", collapse=""))
+		}
+	if (!quiet) cat("distance matrix is successfully generated\n")
+	return(distmat)
+	}
 }
 
 # will only consider the first cluster cutoff, if multiple cutoffs are used
@@ -330,13 +342,12 @@ cmp.duplicated <- function(db, sort=FALSE, type=1)
            dist <- d
         }
     }
-
     return(best)
 }
 
 # intertanl cluster procedure. It takes a leader compounds, and use graph
 # traversal to find all compounds that should be grouped in the cluster leaded
-# by the leeader. If multiple cutoffs are given, it will use the loosest one;
+# by the leader. If multiple cutoffs are given, it will use the loosest one;
 # but at the same time, clusters for stricter cutoffs are also built as a
 # desired side-effect, without need to recompute the distance.
 # RETURN: the new cluster_id matrix

@@ -1050,7 +1050,7 @@ fp2bit <- function(x, type=3, fptag="PUBCHEM_CACTVS_SUBSKEYS") {
         }
 }
 
-## Fingerprint similarity search function 
+## Fingerprint comparison and similarity search function 
 fpSim <- function(x, y, sorted=TRUE, method="Tanimoto", cutoff=0, top="all", alpha=1, beta=1, ...) {
 	## Predefined similarity methods
 	if(class(method)=="character") {
@@ -1087,11 +1087,19 @@ fpSim <- function(x, y, sorted=TRUE, method="Tanimoto", cutoff=0, top="all", alp
 	if(sorted==TRUE) {
                 tmp <- rev(sort(method(a,b,c,d)))
                 if(top!="all") tmp <- tmp[1:top]
-		return(tmp[tmp>=cutoff])
+		if(top!=1) { 
+			return(tmp[tmp>=cutoff])
+		} else {
+			return(tmp) # returns always a value when top=1; required for compatibility with cmp.cluster
+		}
 	}
 	if(sorted==FALSE) {
 		tmp <- method(a,b,c,d)
-                return(tmp[tmp>=cutoff])
+		if(top!=1) {
+                	return(tmp[tmp>=cutoff])
+		} else {
+			return(tmp) # returns always a value when top=1; required for compatibility with cmp.cluster
+		}
 	}
 }
 

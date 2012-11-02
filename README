@@ -1,4 +1,7 @@
 changelog
+	version 2.10.6
+	- fixed cmp.cluster support for FPset 
+
         version 2.10.5
                 - added jarvisPatrick function
 
