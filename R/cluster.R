@@ -17,7 +17,8 @@ cmp.cluster <- function(db, cutoff, is.similarity=TRUE, save.distances=FALSE,
     ## ThG: added for compatibility with new S4 classes APset/AP
     dbtype <- as.character(class(db))
     if(dbtype=="APset") { db <- apset2descdb(db) }
-    if(dbtype=="FPset") { db <- list(descdb=db, cids=cid(db), sdfsegs=NULL, source="FPset", type="FPset") }
+    if(dbtype=="FPset") { db <- list(descdb=as.list(as.data.frame(t(as.matrix(db)))), cids=cid(db), sdfsegs=NULL, source="FPset", type="FPset") }
+    ## Note: 7-8 times better time performance if fingerprints are stored in list instead of matrix!!!
     ## ThG: end of lines
     
     # see if db if file-backed
@@ -60,7 +61,7 @@ cmp.cluster <- function(db, cutoff, is.similarity=TRUE, save.distances=FALSE,
         }
     } 
     ## ThG: added to make function easier to use with new S4 classes APset/AP
-    else if (class(db$descdb) == "FPset") {
+    else if (db$type=="FPset") {
         distf <- function(i, j) {
             return(1-fpSim(db$descdb[[i]], db$descdb[[j]], top=1, ...))
         }

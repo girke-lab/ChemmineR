@@ -992,8 +992,8 @@ count[1:4]
 
 \subsection{Binning Clustering} 
 Compound libraries can be clustered into discrete similarity groups with the
-binning clustering function \Rfunction{cmp.cluster}. The function requires as input an atom pair 
-descriptor database as well as a similarity threshold. The binning clustering
+binning clustering function \Rfunction{cmp.cluster}. The function accepts as input an atom pair
+(\Robject{APset}) or a fingerprint (\Robject{FPset}) descriptor database as well as a similarity threshold. The binning clustering
 result is returned in form of a data frame. Single linkage is used for cluster
 joining. The function calculates the required compound-to-compound distance
 information on the fly, while a memory-intensive distance matrix is only

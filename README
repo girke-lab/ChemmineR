@@ -1,4 +1,7 @@
 changelog
+	version 2.10.8
+        - speed improvement of cmp.cluster with FPset objects
+
 	version 2.10.7
 	- fixed division by zero error in fpSim 
 
