@@ -1026,9 +1026,15 @@ clusters[1:12,]
 \noindent Clustering of \Robject{FPset} objects with multiple cutoffs. This method allows to call various similarity methods provided by the \Rfunction{fpSim} function.  For details consult \Rfunction{?fpSim}.
 <<eval=TRUE, keep.source=TRUE>>=
 fpset <- desc2fp(apset)
-clusters2 <- cmp.cluster(fpset, cutoff=c(0.5, 0.7, 0.9), method="Tversky", 
-                         alpha=1.0, beta=1.0, quiet=TRUE) 
+clusters2 <- cmp.cluster(fpset, cutoff=c(0.5, 0.7, 0.9), method="Tanimoto", 
+                         quiet=TRUE) 
 clusters2[1:12,]
+@
+
+\noindent Sames as above, but using Tversky similarity measure:
+<<eval=TRUE, keep.source=TRUE>>=
+clusters3 <- cmp.cluster(fpset, cutoff=c(0.5, 0.7, 0.9), method="Tversky", 
+                         alpha=0.3, beta=0.7, quiet=TRUE) 
 @
 
 \noindent Return cluster size distributions for each cutoff:
