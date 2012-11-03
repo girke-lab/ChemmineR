@@ -1,4 +1,7 @@
 changelog
+	version 2.10.7
+	- fixed division by zero error in fpSim 
+
 	version 2.10.6
 	- fixed cmp.cluster support for FPset 
 

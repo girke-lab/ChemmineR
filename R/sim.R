@@ -1051,19 +1051,19 @@ fp2bit <- function(x, type=3, fptag="PUBCHEM_CACTVS_SUBSKEYS") {
 }
 
 ## Fingerprint comparison and similarity search function 
-fpSim <- function(x, y, sorted=TRUE, method="Tanimoto", cutoff=0, top="all", alpha=1, beta=1, ...) {
+fpSim <- function(x, y, sorted=TRUE, method="Tanimoto", addone=1, cutoff=0, top="all", alpha=1, beta=1, ...) {
 	## Predefined similarity methods
 	if(class(method)=="character") {
-	 	if(method=="Tanimoto" | method=="tanimoto") method <- function(a,b,c,d) c/(a+b+c)
+	 	if(method=="Tanimoto" | method=="tanimoto") method <- function(a,b,c,d) (c+addone)/(a+b+c+addone)
 	}
 	if(class(method)=="character") {
-	 	if(method=="Euclidean" | method=="euclidean") method <- function(a,b,c,d) sqrt((c+d)/(a+b+c+d))
+	 	if(method=="Euclidean" | method=="euclidean") method <- function(a,b,c,d) sqrt((c+d+addone)/(a+b+c+d+addone))
 	}
 	if(class(method)=="character") {
-	 	if(method=="Tversky" | method=="tversky") method <- function(a,b,c,d) c/(alpha*a + beta*b + c)
+	 	if(method=="Tversky" | method=="tversky") method <- function(a,b,c,d) (c+addone)/(alpha*a + beta*b+c+addone)
 	}
 	if(class(method)=="character") {
-	 	if(method=="Dice" | method=="dice") method <- function(a,b,c,d) 2*c/(a + c + b + c)
+	 	if(method=="Dice" | method=="dice") method <- function(a,b,c,d) (2*c+addone)/(a+c+b+c+addone)
 	}
 	## Check for valid inputs
 	if(!any(c(is.vector(x), class(x)=="FP", class(x)=="FPset" & length(x)==1))) stop("x needs to be object of class FP, FPset of length one, or vector")

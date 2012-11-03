@@ -62,7 +62,7 @@ cmp.cluster <- function(db, cutoff, is.similarity=TRUE, save.distances=FALSE,
     ## ThG: added to make function easier to use with new S4 classes APset/AP
     else if (class(db$descdb) == "FPset") {
         distf <- function(i, j) {
-            return(1-fpSim(db$descdb[[i]], db$descdb[[j]], top=1, cutoff=1-cutoff, ...))
+            return(1-fpSim(db$descdb[[i]], db$descdb[[j]], top=1, ...))
         }
     ## ThG: end of lines
     } else {
@@ -430,7 +430,7 @@ symmetric=TRUE, quiet=FALSE)
 ## the nearest neighbor table. The latter is an optional setting that is not part 
 ## of the original Jarvis-Patrick algorithm. It allows to generate more tight 
 ## clusters and minimizes some limitations of this method, such as joining unrelated
-## items when clustering small dataset.  
+## items when clustering small datasets.  
 jarvisPatrick <- function(x, j, k, cutoff=NA, type="cluster", ...) {      
         ## Check inputs
         if(!any(c("APset", "FPset", "matrix") %in% class(x))) stop("class(x) needs to be APset, FPset or matrix")
