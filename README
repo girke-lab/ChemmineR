@@ -1,4 +1,7 @@
 changelog
+	version 2.10.9
+		- fixed bug in jarvisPatrick function with pre-generated NN matrix
+	
 	version 2.10.8
         - speed improvement of cmp.cluster with FPset objects
 
