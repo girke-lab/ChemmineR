@@ -58,7 +58,7 @@ loadDb <- function(conn,data,featureGenerator){
 	numCompounds = dim(data)[1]
 	dups=0
 
-	addNewFeatures(conn,data,featureGenerator)
+	addNeededFeatures(conn,data,featureGenerator)
 
 	if(all(c("name","definition","format") %in% colnames(data))){
 		insertNamedDef(conn,data)
@@ -87,32 +87,42 @@ loadDescriptors <- function(conn,data){
 
 	insertDescriptor(conn,data)
 }
-addNewFeatures <- function(conn,data, featureGenerator){
+addNeededFeatures <- function(conn,data, featureGenerator){
 	if(dim(data)[1] == 0){ # no data given
-		warning("no data given to addNewFeatures, doing nothing")
+		warning("no data given to addNeededFeatures, doing nothing")
 		return()
 	}
 
-	compoundFields = dbListFields(conn,"compounds")
-	userFieldNames = setdiff(colnames(data),compoundFields)
+	features = featureDiff(conn,data)
 
-	tableList=dbListTables(conn)
-	existingFeatures = sub("^feature_","",tableList[grep("^feature_.*",tableList)])
+	if(length(features$missing) != 0)
+		stop(paste("missing features:",paste(features$missing,collapse=",")))
 
-	missingFeatures = setdiff(existingFeatures,userFieldNames)
-	if(length(missingFeatures) != 0)
-		stop(paste("missing features:",paste(missingFeatures,collapse=",")))
-
-	newFeatures = setdiff(userFieldNames,existingFeatures)
 
 	#will need to query all existing compounds and add these features
-	if(length(newFeatures) != 0){
+	if(length(features$new) != 0){
 		message("adding new features to existing compounds. This could take a while")
-		lapply(newFeatures,function(name) createFeature(conn,name,is.numeric(data[,name])))
-		indexExistingCompounds(conn,newFeatures,featureGenerator)
-		
+		lapply(features$new,function(name) createFeature(conn,name,is.numeric(data[,name])))
+		indexExistingCompounds(conn,features$new,featureGenerator)
 	}
+}
+featureDiff <- function(conn,data) {
 
+	if( nrow(data) == 0){ # no data given
+		list(new=c(),missing=c())
+	}else{
+
+		compoundFields = dbListFields(conn,"compounds")
+		userFieldNames = setdiff(colnames(data),compoundFields)
+
+		tableList=dbListTables(conn)
+		existingFeatures = sub("^feature_","",tableList[grep("^feature_.*",tableList)])
+
+		missingFeatures = setdiff(existingFeatures,userFieldNames)
+		newFeatures = setdiff(userFieldNames,existingFeatures)
+
+		list(new=newFeatures, missing=missingFeatures)
+	}
 }
 insertUserFeatures<- function(conn,data){
 	if(debug) print("inserting user features")
@@ -322,9 +332,6 @@ loadSdf <- function(conn,sdfFile,fct=function(x) data.frame(),
 }
 
 
-smile2sdf <- function(smileFile){
-
-}
 
 loadSmiles <- function(conn, smileFile,batchSize=10000){
 
@@ -453,6 +460,38 @@ indexExistingCompounds <- function(conn,newFeatures,featureGenerator){
 		)
 
 	},1000)
+}
+addNewFeatures <- function(conn,featureGenerator){
+
+	firstBatch = TRUE
+	newFeatures = c()
+	batchByIndex(dbGetQuery(conn,"SELECT compound_id FROM
+									compounds WHERE format!='junk' ")[1][[1]],function(compoundIdSet){
+		tryCatch({
+				rows=dbGetQuery(conn,paste("SELECT compound_id,definition FROM compounds WHERE compound_id in (",
+								  paste(compoundIdSet,collapse=","),")"))
+
+				sdfset = definition2SDFset(rows[2][[1]])
+
+				data = featureGenerator(sdfset)
+
+				if(firstBatch){
+					firstBatch<<-FALSE
+					features = featureDiff(conn,data)
+					newFeatures <<- features$new
+					for(name in features$new)
+						createFeature(conn,name,is.numeric(data[[name]]))
+				}
+				if(debug) print(paste("new features ",paste(newFeatures,collapse=",")))
+				lapply(newFeatures, function(name){
+						 insertFeature(conn,name,cbind(compound_id=rows[1][[1]],data[name]))
+				})
+			},error=function(e) stop(paste("error in indexExistingCompounds:",e$message))
+		)
+
+	},1000)
+
+
 }
 
 createFeature <- function(conn,name, isNumeric){

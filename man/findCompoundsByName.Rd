@@ -1,11 +1,10 @@
 \name{findCompoundsByName}
 \alias{findCompoundsByName}
-%- Also NEED an '\alias' for EACH other topic documented here.
 \title{
 	Find compound by name
 }
 \description{
-	Find the id of a compound given the name of a compound.
+	Find the ids of compounds given the names.
 }
 \usage{
 findCompoundsByName(conn, names, keepOrder = FALSE)
@@ -13,50 +12,40 @@ findCompoundsByName(conn, names, keepOrder = FALSE)
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{conn}{
-%%     ~~Describe \code{conn} here~~
-}
+	  A database connection object, such as is returned by \code{\link{initDb}}.
+   }
   \item{names}{
-%%     ~~Describe \code{names} here~~
-}
+     A list of names of compounds to search for. The names are those that would be
+     returned by \code{\link{sdfid}}. An error will be raised if any names
+     are not found.
+
+   }
   \item{keepOrder}{
-%%     ~~Describe \code{keepOrder} here~~
-}
-}
-\details{
-%%  ~~ If necessary, more details than the description above ~~
+     If true, the order of the output compound ids will be the same as the 
+     input names. This imposes a performance hit that can be significant for
+     large datasets, thus it should be left FALSE unless needed.
+   }
 }
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
-}
-\references{
-%% ~put references to the literature/web site here ~
+   Returns the compound ids for compounds with the given name. The output
+   order is not guaranteed unless keepOrder is set to TRUE.
+   An error will be raised if any name cannot be found.
 }
 \author{
-%%  ~~who you are~~
-}
-\note{
-%%  ~~further notes~~
+   Kevin Horan
 }
 
-%% ~Make other sections like Warning with \section{Warning }{....} ~
-
-\seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
-}
 \examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
+   #create and initialize a new SQLite database
+   conn = initDb("test.db")
 
-## The function is currently defined as
-function (conn, names, keepOrder = FALSE) 
-findCompoundsByX(conn, "name", names, keepOrder)
+	data(sdfsample)
+
+	#just load the data with no features or descriptors
+	ids=loadSdf(conn,sdfsample)
+
+   # find id of compound 650003
+   findCompoundsByName(conn,c("650003"))
+	unlink("test.db")
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+

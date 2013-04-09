@@ -1,8 +1,7 @@
 \name{initDb}
 \alias{initDb}
-%- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-	Iinitialize Database
+	Iinitialize SQL Database
 }
 \description{
 	This will ensure that the database connection given is ready for use. If it does not find the tables it needs, it
@@ -11,69 +10,23 @@
 \usage{
 initDb(handle)
 }
-%- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{handle}{
-	  This can be either a filename, in which case we assume it is the naem of an SQLite database and use RSQLite to
+	  This can be either a filename, in which case we assume it is the name of an SQLite database and use RSQLite to
 	  connect to it, or else any DBI Connection.
 }
 }
-\details{
-%%  ~~ If necessary, more details than the description above ~~
-}
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
-}
-\references{
-%% ~put references to the literature/web site here ~
+   Returns a connection object that can be used with other database oriented functions.
 }
 \author{
-%%  ~~who you are~~
+   Kevin Horan
 }
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
+   RSQLite
 }
 \examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
-
-## The function is currently defined as
-function (handle) 
-{
-    if (is.character(handle)) {
-        require(RSQLite)
-        driver = dbDriver("SQLite")
-        conn = dbConnect(driver, dbname = handle, cache_size = 1e+05)
-    }
-    else if (inherits(handle, "DBIConnection")) {
-        conn = handle
-    }
-    else {
-        stop("handle must be a SQLite database name or a DBIConnection")
-    }
-    tableList = dbListTables(conn)
-    if (!all(c("compounds", "descriptor_types", "descriptors") \%in\% 
-        tableList)) {
-        print("createing db")
-        statements = unlist(strsplit(paste(readLines("inst/schema/compounds.SQLite"), 
-            collapse = ""), ";", fixed = TRUE))
-        Map(function(sql) dbOp(dbGetQuery(conn, sql)), statements)
-    }
-    conn
-  }
+   #create and initialize a new SQLite database
+   conn = initDb("test.db")
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line

@@ -80,6 +80,15 @@ test_ba.loadSdf<-function(){
 	checkEquals(typeCount,1)
 					
 }
+test_bn.addNewFeatures<-function(){
+
+	conn = initDb("test2.db")
+	addNewFeatures(conn,function(sdfset) data.frame(new=cid(sdfset),new2=cid(sdfset)))
+	tables = dbListTables(conn)
+	checkTrue("feature_new" %in% tables)
+	checkTrue("feature_new2" %in% tables)
+
+}
 
 test_ca.findCompounds<-function(){
 
@@ -123,8 +132,8 @@ test_ea.comparison <- function()
 {
 
 	DEACTIVATED("local test")
-	filename = "~/runs/kinase/kinase.sdf"
-	#filename = "~/runs/protein/proteins.sdf"
+	#filename = "~/runs/kinase/kinase.sdf"
+	filename = "~/runs/protein/proteins.sdf"
 	#filename = "~/runs/protein/proteins-1000.sdf"
 #	options(warn=2)
 	options(error=traceback)
@@ -134,9 +143,11 @@ test_ea.comparison <- function()
 					 cbind(MW=MW(sdfset)  ))))
 		print(system.time(index <- read.delim("index.stream",row.names=1)))
 		#index[index$sdfid %in% c("3540","5329468","32014"),]
-		print(system.time(queryIds <- index[index$MW < 400,]))
-		print(system.time(read.SDFindex(file=filename,index=queryIds,type="file",outfile="stream_result.sdf")))
-		#print(system.time(read.SDFindex(file=filename,index=queryIds)))
+		print(system.time(queryIds <- index[ !is.na(index$MW) & index$MW < 400,]))
+		#print(system.time(read.SDFindex(file=filename,index=queryIds,type="file",outfile="stream_result.sdf")))
+		#print(system.time(sdfset<<-read.SDFindex(file=filename,index=queryIds)))
+		#print(length(sdfset))
+
 		#sink()
 		#print(t1) #loadSdf
 		#print(t2) #
@@ -147,8 +158,8 @@ test_ea.comparison <- function()
 		print(system.time(conn<-initDb("tempdb")))
 		print(system.time(loadSdf(conn,filename,function(sdfset)cbind(MW=MW(sdfset)),
 										  function(x) {
-											  print(paste("apset time",length(x)))
-											  print(system.time(aps<<-sdf2ap(x)))
+											  #print(paste("apset time",length(x)))
+											  #print(system.time(aps<<-sdf2ap(x)))
 											  #data.frame(descriptor_type="ap",
 															 #descriptor = unlist(lapply(ap(aps), 
 																					#function(x) paste(x,collapse=", "))))
@@ -157,7 +168,8 @@ test_ea.comparison <- function()
 										)))
 		print(system.time(indexes <<- findCompounds(conn,"MW","MW < 400")))
 		print(system.time(getCompounds(conn, indexes,file="dbtest_result.sdf")))
-	#	print(system.time(getCompounds(conn, indexes)))
+		print(system.time(sdfset<<-getCompounds(conn, indexes)))
+		print(length(sdfset))
 		dbDisconnect(conn)
 	}
 

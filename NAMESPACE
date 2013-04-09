@@ -69,8 +69,8 @@ export(
 
 	## Database backend functions
 	## Source: compound_db.R
-	"initDb","loadSdf","loadSmiles","getCompounds","findCompounds",
-	"getCompoundNames","findCompoundsByName",
+	"initDb","loadSdf","getCompounds","findCompounds",
+	"getCompoundNames","findCompoundsByName","addNewFeatures",
 
 	"jarvisPatrick_c",
 

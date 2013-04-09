@@ -37,6 +37,7 @@
 
 <<echo=FALSE>>=
 options(width=80)
+unlink( "test.db")
 @
 %\parindent 0in
 
@@ -452,6 +453,107 @@ apset <- read.AP(x=sdf2ap(sdfset[1:20], type="character"), type="ap")
 fpchar <- desc2fp(sdf2ap(sdfset[1:20]), descnames=1024, type="character")
 fpset <- as(fpchar, "FPset")
 @
+
+\pagebreak
+
+\section{Storing Compounds in an SQL Database}
+
+As an alternative to sdfStream, there is now also an option to store data in an SQL database, which then allows for fast queries and compound
+retrieval. This is still an experimental feature. The default database is SQLite, but any other SQL database should work with some minor
+modifications to the table definitions, which are stored in schema/compounds.SQLite under the ChemmineR package directory. 
+Compounds are stored in their entirety in the databases so there is no need to keep any original data files.
+
+Users can define their own set of compound features to compute and store when loading new compounds. Each of these features will be stored in
+its own, indexed table. Searches can then be performed using these features to quickly find specific compounds. Compounds can always be retrieved 
+quickly because of the database index, no need to scan a large compound file. In addition to user defined features, descriptors can also be
+computed and stored for each compound. 
+
+A new database can be created with the \Rfunction{initDb} function. This takes either an existing database connection, or a filename. If
+a filename is given then an SQLite database connection is created. It then ensures that the required tables exist and creates them if not. The
+connection object is then returned. This function can be called safely on the same connection or database many times and will not delete any data.
+
+\subsection{Loading Data}
+The function \Rfunction{loadSdf} can be used to load \Robject{SDF} data, either from a file or \Rclass{SDFset} object. The 
+\Rfunarg{fct} parameter should be a function to extract features from the data. It will be handed an \Rclass{SDFset} generated from the data being loaded.
+This may be done in batches, so there is no guarantee that the given SDFSset will contain the whole dataset. This
+function should return a data frame with a column for each feature and a row for each compound given. 
+The order of the final data frame should be the same as that of the \Rclass{SDFset}.
+The column names will become the feature names.
+Each of these features will become a new, indexed, table in the database which can be used later to
+search for compounds. 
+
+The \Rfunarg{descriptors} parameter can be a function which computes descriptors.
+This function will also be given an \Rclass{SDFset} object, which may be done in batches. It should return a data frame
+with the following two columns: ``descriptor'' and ``descriptor\_type''.  The ``descriptor''  column should contain
+a string representation of the descriptor, and ``descriptor\_type'' is the type of the descriptor. Our convention
+for atom pair is ``ap'' and ``fp'' for finger print. The order should also be maintained.
+
+When the data has been loaded, \Rfunction{loadSdf} will return the compound id numbers of each compound loaded.
+These compound id numbers are computed by the database and are not extracted from the compound data itself.
+They can be used to quickly retrieve compounds later. 
+
+New features can also be added using this function. However, all compounds must have all features so if new
+features are added to a new set of compounds, all existing features must be computable by the \Rfunarg{fct} function 
+given. If new features are detected, all existing compounds will be run through \Rfunarg{fct} in order to compute
+the new features for them as well.
+
+For example, if dataset X is loaded with features F1 and F2, and then at a later time we load dataset Y with
+new feature F3, the \Rfunarg{fct} function used to load dataset Y must compute and return features F1, F2, and F3. 
+\Rfunction{loadSdf} will call \Rfunarg{fct} with both datasets X and Y so that all features are available for all
+compounds. If any features are missing an error will be raised.
+If just new features are being added, but no new compounds, use the \Rfunction{addNewFeatures} function.
+
+In this example, we create a new database called ``test.db'' and load it with data
+from and \Rclass{SDFset}. We also define \Rfunarg{fct} to compute the molecular weight, ``MW'', and the
+number of rings and aromatic rings. The rings function actually returns a data frame with columns
+``RINGS'' and ``AROMATIC'', which will be merged into the data frame being created which will also 
+contain the ``MW'' column. These will be the names used for these features and must be used when
+searching with them.  Finally, the new compound ids are returned and stored in the ``ids'' variable.
+
+<<eval=TRUE, keep.source=TRUE>>=
+
+data(sdfsample)
+
+#create and initialize a new SQLite database
+conn = initDb("test.db")
+
+# load data and compute 3 features: molecular weight, with the MW function, 
+# and counts for RINGS and AROMATIC, as computed by rings, which 
+# returns a data frame itself.
+ids=loadSdf(conn,sdfsample,
+      function(sdfset) 
+       data.frame(MW = MW(sdfset),  
+                  rings(sdfset,type="count",upper=6, arom=TRUE))
+      )
+@
+
+
+\subsection{Searching}
+
+Compounds can be searched for using the \Rfunction{findCompounds} function. This function
+takes a connection object, a vector of feature names used in the tests, and finally, a vector
+of tests that must all pass for a compound to be included in the result set.
+Each test should be a boolean expression.  For example:
+``c("MW <= 400","RINGS > 3")'' would return all compounds with a molecular weight of 400 or
+less and more than 3 rings, assuming these features exist in the database. 
+The syntax for each test is ``<feature name> <SQL operator> <value>''.
+If you know SQL you can go beyond this basic syntax.  These tests will simply be concatenated together 
+with  ``AND'' in-between them and tacked on the
+end of a WHERE clause of an SQL statement. So any SQL that will work in that context is fine.
+The function will return a list of compound ids, the actual compounds can be fetched with \Rfunction{getCompounds}.
+If just the names are needed, the \Rfunction{getCompoundNames} function can be used.  
+Compounds can also be fetched by name using the \Rfunction{findCompoundsByName} function.
+
+In this example we search for compounds with molecular weight less than 300. We then fetch
+the matching compounds and show their molecular weight.
+<<eval=TRUE, keep.source=TRUE>>=
+lightIds = findCompounds(conn,"MW",c("MW < 300"))
+MW(getCompounds(conn,lightIds)) 
+
+#names of matching compounds:
+getCompoundNames(conn,lightIds)
+@
+
 
 \pagebreak
 
@@ -1060,6 +1162,9 @@ join items into clusters when they meet the following requirements: (a) they are
 than the cutoff value, for each item.  This allows one to generate tighter clusters and to minimize certain limitations of this method, such as false joins of completely unrelated items when operating on small data sets.  The \Rfunction{trimNeighbors} function can
 also be used to take an existing nearest neighbor table and remove all neighbors whose similarity value is below a given cutoff value. This allows one to compute a very relaxed nearest neighbor table initially, and then quickly try different refinements later. 
 
+In case an existing nearest neighbor matrix needs to be used, the \Rfunction{fromNNMatrix} function can be used to transform it into the list structure that \Rfunction{jarvisPatrick} requires. The input matrix must have a row for each compound, and each row should
+be the index values of the neighbors of compound represented by that row. The names of each compound can also be given through the \Rfunarg{names} argument. If not given, it will attempt to use the \Rfunction{rownames} of the given matrix.
+
 The \Rfunction{jarvisPatrick} function also allows one to relax some of the requirements of the algorithm through the \Rfunarg{mode} parameter. When set to ``a1a2b'', then all requirements are used. If set to ``a1b'', then (a) is relaxed to a unidirectional
 requirement. Lastly, if \Rfunarg{mode} is set to ``b'', then only requirement (b) is used, which means that all pairs of items will be checked to see if (b) is satisfied between them.  The size of the clusters generated by the different methods increases in this
 order: ``a1a2b'' < ``a1b'' < ``b''. The run time of method ``a1a2b'' follows a close to linear relationship, while it is nearly quadratic for the much more exhaustive method ``b''. Only methods ``a1a2b'' and ``a1b'' are suitable for clustering very large data sets
@@ -1069,8 +1174,9 @@ An additional extension to the algorithm is the ability to set the linkage mode.
 context of Jarvis-Patrick, average linkage means that at least half of the pairs between the clusters under consideration must meet requirement (b). Similarly, for complete linkage, all pairs must requirement (b). Single linkage is the normal case
 for Jarvis-Patrick and just means that at least one pair must meet requirement (b).
 
-The output is a cluster \Rclass{vector} with the item labels in the name slot and the cluster IDs in the data slot. As third parameter the user can set a
-minimum similarity \Rfunarg{cutoff} value for generating the nearest neighbor table. The latter is an optional setting that is not part of the original Jarvis-Patrick algorithm.\\
+The output is a cluster \Rclass{vector} with the item labels in the name slot and the cluster IDs in the data slot. There is a utility function called \Rfunction{byCluster}, which takes out
+cluster vector output by \Rfunction{jarvisPatrick} and transforms it into a list of vectors. Each slot of the list is named with a cluster id and the vector contains the cluster members.
+By default the function excludes singletons from the output, but they can be included by setting \Rfunarg{excludeSingletons}=FALSE. 
 
 \noindent Load/create sample \Rclass{APset} and \Rclass{FPset}:
 <<eval=TRUE, keep.source=TRUE>>=
@@ -1084,9 +1190,11 @@ jarvisPatrick(nearestNeighbors(apset,numNbrs=6), k=5, mode="a1a2b") #Using "APse
 jarvisPatrick(nearestNeighbors(fpset,numNbrs=6), k=5, mode="a1a2b") #Using "FPset"
 @
 
-\noindent The following example runs Jarvis-Patrick clustering with a minimum similarity \Rfunarg{cutoff} value (here Tanimoto coefficient). In addition, it uses the much more exhaustive \Rfunarg{"b"} method that generates larger cluster sizes, but significantly increased the run time. For more details, consult the corresponding help file with \Rfunarg{?jarvisPatrick}.
+\noindent The following example runs Jarvis-Patrick clustering with a minimum similarity \Rfunarg{cutoff} value (here Tanimoto coefficient). In addition, it uses the much more exhaustive \Rfunarg{"b"} method that generates larger cluster sizes, but significantly
+increased the run time. For more details, consult the corresponding help file with \Rfunarg{?jarvisPatrick}.
 <<eval=TRUE, keep.source=TRUE>>=
-jarvisPatrick(nearestNeighbors(fpset,cutoff=0.6, method="Tanimoto"), k=2 ,mode="b")
+cl=jarvisPatrick(nearestNeighbors(fpset,cutoff=0.6, method="Tanimoto"), k=2 ,mode="b")
+byCluster(cl)
 @
 
 \noindent Output nearest neighbor table (\Rclass{matrix}):
@@ -1109,6 +1217,13 @@ nnm$similarities[1:4,]
 jarvisPatrick(nnm, k=5,mode="b")
 @
      
+\noindent Using a user defined nearest neighbor matrix:
+<<eval=TRUE, keep.source=TRUE>>=
+nn = matrix(c(1,2,2,1),2,2,dimnames=list(c('one','two')))
+nn
+byCluster(jarvisPatrick(fromNNMatrix(nn),k=1))
+@
+
 
 \subsection{Multi-Dimensional Scaling (MDS)}
 To visualize and compare clustering results, the \Rfunction{cluster.visualize} function can

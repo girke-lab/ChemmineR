@@ -1,6 +1,5 @@
 \name{getCompoundNames}
 \alias{getCompoundNames}
-%- Also NEED an '\alias' for EACH other topic documented here.
 \title{
 	Get Compound Names
 }
@@ -10,54 +9,31 @@
 \usage{
 getCompoundNames(conn, compoundIds)
 }
-%- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{conn}{
-%%     ~~Describe \code{conn} here~~
-}
+	  A database connection object, such as is returned by \code{\link{initDb}}.
+   }
   \item{compoundIds}{
-%%     ~~Describe \code{compoundIds} here~~
-}
-}
-\details{
-%%  ~~ If necessary, more details than the description above ~~
+     A vector of compound ids.
+   }
 }
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
-}
-\references{
-%% ~put references to the literature/web site here ~
+   Returns a vector of compound names.The rownames will be the compound ids. Compound ids
+   not found, or for which a name is not defined, will be represented as NA.
 }
 \author{
-%%  ~~who you are~~
-}
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
-
-\seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
+   Kevin Horan
 }
 \examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
+   #create and initialize a new SQLite database
+   conn = initDb("test.db")
 
-## The function is currently defined as
-function (conn, compoundIds) 
-{
-    result = selectInBatches(conn, compoundIds, function(ids) paste("SELECT compound_id, name FROM compounds where compound_id in (", 
-        paste(ids, collapse = ","), ")"))
-    as.matrix(merge(data.frame(compound_id = compoundIds), result)[[2]])
-  }
+	data(sdfsample)
+
+	#just load the data with no features or descriptors
+	ids=loadSdf(conn,sdfsample)
+
+   getCompoundNames(conn,ids[1:3])
+	unlink("test.db")
+
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line

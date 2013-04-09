@@ -1,13 +1,12 @@
 \name{findCompounds}
 \alias{findCompounds}
-%- Also NEED an '\alias' for EACH other topic documented here.
 \title{
 	Find Compounds in Database
 }
 \description{
-	Performs an SQL query to find compounds matching the given tests. Each test
-	should be in the format: "<feature name> <SQL operator> <value>". They will all be "AND"'d together.
-	All feature names used in any test should be given in the featureNames argument
+   Searches the SQL database using features computed at load time. Each feature
+   used should be specified in the \code{featureNames} parameter. Then a set of filters
+   can be given to search for specific compounds.
 }
 \usage{
 findCompounds(conn, featureNames, tests)
@@ -15,57 +14,44 @@ findCompounds(conn, featureNames, tests)
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{conn}{
-%%     ~~Describe \code{conn} here~~
-}
+	  A database connection object, such as is returned by \code{\link{initDb}}.
+   }
   \item{featureNames}{
-%%     ~~Describe \code{featureNames} here~~
-}
+     A list of all feature names used in any test.
+   }
   \item{tests}{
-%%     ~~Describe \code{tests} here~~
-}
-}
-\details{
-%%  ~~ If necessary, more details than the description above ~~
+     A vector of filters that must all be true for a compound to be returned. For example:
+     c("MW <= 400","RINGS > 3") would return all compounds with a molecular weight of 400 or
+     less and a more than 3 rings, assuming these features exist in the database. 
+     The syntax for each test is "<feature name> <SQL operator> <value>".
+     These tests will simply be concatenated together with " AND " in-between them and tacked on the
+     end of a WHERE clause of an SQL statement. So any SQL that will work in that context is fine.
+   }
 }
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
-}
-\references{
-%% ~put references to the literature/web site here ~
+   Returns a list of compound ids. The actual compounds can be fetched with \code{\link{getCompounds}}.
 }
 \author{
-%%  ~~who you are~~
+   Kevin Horan
 }
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
-
 \seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
+\code{\link{getCompounds}}
 }
 \examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
+   #create and initialize a new SQLite database
+   conn = initDb("test.db")
 
-## The function is currently defined as
-function (conn, featureNames, tests) 
-{
-    featureTables = paste("feature_", featureNames, sep = "")
-    sql = paste("SELECT compound_id FROM compounds JOIN ", paste(featureTables, 
-        collapse = " USING(compound_id) JOIN "), " USING(compound_id) WHERE ", 
-        paste("(", paste(tests, collapse = ") AND ("), ")"))
-    result = dbGetQuery(conn, sql)
-    result[1][[1]]
-  }
+	data(sdfsample)
+
+	#load data and compute 3 features: molecular weight, with the MW function, 
+	# and counts for RINGS and AROMATIC, as computed by rings, which returns a data frame itself.
+	ids=loadSdf(conn,sdfsample,
+			  function(sdfset) 
+					data.frame(MW = MW(sdfset),  rings(sdfset,type="count",upper=6, arom=TRUE))
+			 )
+   #search for compounds with molecular weight less than 200
+   lightIds = findCompounds(conn,"MW",c("MW < 200"))
+   MW(getCompounds(conn,lightIds)) # should find one compound with weight 140
+	unlink("test.db")
+
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
