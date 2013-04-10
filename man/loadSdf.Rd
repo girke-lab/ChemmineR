@@ -75,20 +75,20 @@ loadSdf(conn, sdfFile, fct = function(x) data.frame(), descriptors=function(x) d
 \examples{
 	  
    #create and initialize a new SQLite database
-   conn = initDb("test.db")
+   conn = initDb("test6.db")
 
 	data(sdfsample)
 
 	#just load the data with no features or descriptors
 	ids=loadSdf(conn,sdfsample)
-	unlink("test.db")
+	unlink("test6.db")
 
-   conn = initDb("test.db")
+   conn = initDb("test5.db")
 	#load data and compute 3 features: molecular weight, with the MW function, 
 	# and counts for RINGS and AROMATIC, as computed by rings, which returns a data frame itself.
 	ids=loadSdf(conn,sdfsample,
 			  function(sdfset) 
 					data.frame(MW = MW(sdfset),  rings(sdfset,type="count",upper=6, arom=TRUE))
 			 )
-	unlink("test.db")
+	unlink("test5.db")
 }

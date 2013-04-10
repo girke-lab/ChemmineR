@@ -37,7 +37,7 @@ findCompoundsByName(conn, names, keepOrder = FALSE)
 
 \examples{
    #create and initialize a new SQLite database
-   conn = initDb("test.db")
+   conn = initDb("test4.db")
 
 	data(sdfsample)
 
@@ -46,6 +46,6 @@ findCompoundsByName(conn, names, keepOrder = FALSE)
 
    # find id of compound 650003
    findCompoundsByName(conn,c("650003"))
-	unlink("test.db")
+	unlink("test4.db")
 }
 

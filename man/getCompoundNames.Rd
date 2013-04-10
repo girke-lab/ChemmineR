@@ -26,7 +26,7 @@ getCompoundNames(conn, compoundIds)
 }
 \examples{
    #create and initialize a new SQLite database
-   conn = initDb("test.db")
+   conn = initDb("test2.db")
 
 	data(sdfsample)
 
@@ -34,6 +34,6 @@ getCompoundNames(conn, compoundIds)
 	ids=loadSdf(conn,sdfsample)
 
    getCompoundNames(conn,ids[1:3])
-	unlink("test.db")
+	unlink("test3.db")
 
 }

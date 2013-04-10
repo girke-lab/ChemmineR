@@ -39,7 +39,7 @@ findCompounds(conn, featureNames, tests)
 }
 \examples{
    #create and initialize a new SQLite database
-   conn = initDb("test.db")
+   conn = initDb("test1.db")
 
 	data(sdfsample)
 
@@ -52,6 +52,6 @@ findCompounds(conn, featureNames, tests)
    #search for compounds with molecular weight less than 200
    lightIds = findCompounds(conn,"MW",c("MW < 200"))
    MW(getCompounds(conn,lightIds)) # should find one compound with weight 140
-	unlink("test.db")
+	unlink("test1.db")
 
 }

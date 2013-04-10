@@ -33,7 +33,7 @@
 }
 \examples{
    #create and initialize a new SQLite database
-   conn = initDb("test.db")
+   conn = initDb("test3.db")
 
 	data(sdfsample)
 
@@ -43,6 +43,6 @@
    #returns a SDFset with 3 compounds
    getCompounds(conn, ids[1:3])
 
-	unlink("test.db")
+	unlink("test3.db")
 
 }
