@@ -1,4 +1,7 @@
 changelog
+	version 2.12.2
+		- fixed bug in SDF importer
+	
 	version 2.11.10
 		- improved performance of jarvisPatrick function
 	

@@ -132,6 +132,7 @@ setClass("SDF", representation(header="character", atomblock="matrix", bondblock
 	countpos <- grep("V\\d\\d\\d\\d$", sdf, perl=TRUE)
 	if(length(countpos)==0) { countpos <- grep("V {0,}\\d\\d\\d\\d$", sdf, perl=TRUE) }
 	if(length(countpos)==0) { countpos <- 4 }
+	if(length(countpos)>1) { countpos <- 4 }
 	countline <- sdf[countpos]
         if(nchar(gsub("\\d| ", "", substring(countline, 1, 6))) != 0) { countline <- "  0  0" } # Create dummy countline if it contains non-numeric values 
 	Natom <- as.numeric(substring(countline, 1, 3))
