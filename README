@@ -1,4 +1,8 @@
 changelog
+        version 2.12.3
+                - fixed atom align when writing SDFs
+		- support for plotting other bond types than 1-3
+
 	version 2.12.2
 		- fixed bug in SDF importer
 	

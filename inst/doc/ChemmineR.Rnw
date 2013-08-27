@@ -62,7 +62,7 @@ unlink( "test.db")
    \label{fig:overview}
 \end{figure}
 
-\noindent In addition, \Rpackage{ChemmineR} offers visualization functions for compound clustering results and chemical structures. The integration of chemoinformatic tools with the R programming environment has many advantages, such as easy access to a wide spectrum of statistical methods, machine learning algorithms and graphic utilities. The first version of this package was published in \cite{Cao2008c}. Since then many additional utilities have been added to the package and many more are under development for future releases \citep{Backman2011a}. 
+\noindent In addition, \Rpackage{ChemmineR} offers visualization functions for compound clustering results and chemical structures. The integration of chemoinformatic tools with the R programming environment has many advantages, such as easy access to a wide spectrum of statistical methods, machine learning algorithms and graphic utilities. The first version of this package was published in \cite{Cao2008c}. Since then many additional utilities have been added to the package and many more are under development for future releases \citep{Backman2011a, Wang2013a}. 
 
 
 \section{\textcolor{red}{Recently Added Features}}
@@ -849,7 +849,7 @@ sdf.visualize(sdfset[1:4], extra=bondblock(sdfset[1:4]))
 \section{Similarity Comparisons and Searching}
 \markboth{Similarity Comparisons and Searching}{} % Only required to print section title in header field without numbering. 
 \subsection{Maximum Common Substructure (MCS) Searching}
-The ChemmineR add-on package \href{http://www.bioconductor.org/packages/devel/bioc/html/fmcsR.html}{{\textcolor{blue}{fmcsR}}} provides support for identifying maximum common substructures (MCSs) and flexible MCSs among compounds. The algorithm can be used for pairwise compound comparisons, structure similarity searching and clustering. The manual describing this functionality is available \href{http://www.bioconductor.org/packages/devel/bioc/vignettes/fmcsR/inst/doc/fmcsR.pdf}{{\textcolor{blue}{here}}}. The following gives a short preview of some functionalities provided by the \Rpackage{fmcsR} package. \\
+The ChemmineR add-on package \href{http://www.bioconductor.org/packages/devel/bioc/html/fmcsR.html}{{\textcolor{blue}{fmcsR}}} provides support for identifying maximum common substructures (MCSs) and flexible MCSs among compounds. The algorithm can be used for pairwise compound comparisons, structure similarity searching and clustering. The manual describing this functionality is available \href{http://www.bioconductor.org/packages/devel/bioc/vignettes/fmcsR/inst/doc/fmcsR.pdf}{{\textcolor{blue}{here}}} and the associated publication is available in \cite{Wang2013a}. The following gives a short preview of some functionalities provided by the \Rpackage{fmcsR} package. \\
 
 <<plotmcs, eval=TRUE, fig=TRUE, keep.source=TRUE>>=
 library(fmcsR)
