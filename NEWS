@@ -5,7 +5,7 @@ NEW FEATURES
 
     o Integration of OpenBabel functionalities via new ChemmineOB add-on package
     o Improved SMILES support via new SMIset object class and SMILES import/export functions
-    o Many other compound formats are now also supported via ChemmineOB
+    o Many other compound formats are now supported via ChemmineOB
 
 
 CHANGES IN VERSION 2.12.0
