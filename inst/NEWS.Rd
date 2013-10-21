@@ -1,5 +1,17 @@
 \name{NEWS}
 \title{ChemmineR News}
+
+\section{CHANGES IN VERSION 2.14.0}{
+
+   \subsection{NEW FEATURES}{
+      \itemize{
+		  \item Integration of OpenBabel functionalities via new ChemmineOB add-on package
+		  \item Improved SMILES support via new SMIset object class and SMILES import/export functions
+		  \item Many other compound formats are now supported via ChemmineOB
+      }
+   }
+}
+
 \section{CHANGES IN VERSION 2.12.0}{
 
    \subsection{NEW FEATURES}{

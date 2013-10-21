@@ -782,7 +782,6 @@ insertNamedDef <- function(conn,data) {
 		dbGetPreparedQuery(conn,paste("INSERT INTO compounds(name,definition,definition_checksum,format) ",
 								 "VALUES(:name,:definition,:definition_checksum,:format)",sep=""), bind.data=data)
 	}else if(inherits(conn,"PostgreSQLConnection")){
-		require(RPostgreSQL)
 		fields = c("name","definition","definition_checksum","format")
 		postgresqlWriteTable(conn,"compounds",data[,fields],append=TRUE,row.names=FALSE)
 
@@ -801,7 +800,6 @@ insertFeature <- function(conn,name,values){
 		dbGetPreparedQuery(conn, paste("INSERT INTO feature_",name,"(compound_id,",name,") ",
 												 "VALUES(:compound_id,:",name,")",sep=""), bind.data=values)
 	}else if(inherits(conn,"PostgreSQLConnection")){
-		require(RPostgreSQL)
 		fields = c("compound_id",name)
 
 		postgresqlWriteTable(conn,paste("feature_",name,sep=""),values[,fields],append=TRUE,row.names=FALSE)

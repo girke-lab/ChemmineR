@@ -1,10 +1,11 @@
 
 ErrorClass <- "try-error" 
 
-require(RPostgreSQL)
 
 postgresqlWriteTable <- function(con, name, value, field.types, row.names = TRUE,
                                  overwrite = FALSE, append = FALSE, ..., allow.keywords = FALSE) {
+	 if(!require(RPostgreSQL))
+		 stop("The RPostgreSQL package is required to use this function (postgresqlWriteTable)")
     if(overwrite && append)
         stop("overwrite and append cannot both be TRUE")
     if(!is.data.frame(value))
