@@ -192,7 +192,7 @@ setClass("SDF", representation(header="character", atomblock="matrix", bondblock
                         exvec <- vector("character", length=0) 
                 } else {
                     names(exstart) <- gsub("^>.*<|>", "", extradata[exstart])
-                    exindex <- cbind(start=exstart, end=c(exstart[-1], length(extradata)+1)-1)
+                    exindex <- cbind(start=exstart, end=c(exstart[-1], length(extradata))-1) # Changed 'length(extradata)+1' to 'length(extradata)' on Mar 22, 2014
                     exvec <- sapply(rownames(exindex), function(x) paste(extradata[(exindex[x,1]+1):(exindex[x,2]-1)], collapse=" __ "))
 		}
                 return(exvec)
