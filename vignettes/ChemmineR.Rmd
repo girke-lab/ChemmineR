@@ -1,6 +1,6 @@
 % ChemmineR
 % Yiqun Cao, Tyler Backman, Kevin Horan, Thomas Girke 
-% `r format(Sys.time(),"%B %d, %Y")`
+% Last update: `r format(Sys.time(),"%B %d, %Y")`
 <!--
 \usepackage[utf8]{inputenc}
 %\VignetteEngine{knitr::knitr}
@@ -8,8 +8,9 @@
 -->
 
 ```{r echo=FALSE, results='hide',message=FALSE,warning=FALSE,error=FALSE}
- library(ChemmineR) 
- library(knitcitations)
+library(ChemmineR) 
+library(ChemmineOB)
+library(knitcitations)
 ```
 <font color='red'>Porting this vignette to knitr is causing some formatting issues. This will be
  resolved soon.</font>
@@ -242,7 +243,7 @@ The following lists the functions and methods that make use of
 OpenBabel. References are included to locate the sections in the manual
 where the utility and usage of these functions is described.  
 
-*Structure format interconversions* (see Section [sec:conversions])
+*Structure format interconversions* (see Section [Format Inter-Conversions](#format-interconversions))
 
 -   *smiles2sdf*: converts from SMILES to SDF object
 
@@ -253,11 +254,22 @@ where the utility and usage of these functions is described.
 -   *convertFormatFile*: converts files between two
     formats
 
--   *propOB*: generates several compound properites
+*propOB*: generates several compound properties. See the man page for a current list of properties computed.
+```{r eval=TRUE, tidy=FALSE}
+propOB(sdfset[1])
+```
 
--   *fingerprintOB*: generates fingerprints for compounds
+*fingerprintOB*: generates fingerprints for compounds. The fingerprint name can be anything supported by OpenBabel. See the man page
+for a current list.
+```{r eval=TRUE, tidy=FALSE}
+fingerprintOB(sdfset,"FP2")
+```
 
--   *smartsSearchOB*: find matches of SMARTS patterns in compounds
+*smartsSearchOB*: find matches of SMARTS patterns in compounds
+```{r eval=TRUE, tidy=FALSE}
+#count rotable bonds
+smartsSearchOB(sdfset[1:5],"[!$(*#*)&!D1]-!@[!$(*#*)&!D1]",uniqueMatches=FALSE)
+```
 
 Overview of Classes and Functions
 =================================

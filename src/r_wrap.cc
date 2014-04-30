@@ -727,6 +727,17 @@ SWIG_UnpackDataName(const char *c, void *ptr, size_t sz, const char *name) {
 }
 #endif
 
+#include "script.h"
+
+#include <Rdefines.h>
+#include <Rversion.h>
+#include <stdlib.h>
+#include <assert.h>
+
+#ifdef __cplusplus
+#include <exception>
+#endif
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -739,12 +750,6 @@ extern "C" {
 #if !defined(SWIG_NO_STRICT_R_HEADERS)
 # define STRICT_R_HEADERS
 #endif
-
-#include <Rdefines.h>
-#include <Rversion.h>
-#include <stdlib.h>
-#include <assert.h>
-
 #if R_VERSION >= R_Version(2,6,0)
 #define VMAXTYPE void *
 #else
@@ -1091,7 +1096,6 @@ SWIG_R_ConvertPacked(SEXP obj, void *ptr, size_t sz, swig_type_info *ty) {
 }  
 
 #ifdef __cplusplus
-#include <exception>
 #define SWIG_exception_noreturn(code, msg) do { throw std::runtime_error(msg); } while(0)
 #else
 #define SWIG_exception_noreturn(code, msg) do { return result; } while(0)
@@ -1259,7 +1263,6 @@ static swig_module_info swig_module = {swig_types, 2, 0, 0, 0, 0};
 #include <stdexcept>
 
 
-#include "script.h"
 #include <vector>
 
 

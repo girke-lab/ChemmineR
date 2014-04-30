@@ -177,7 +177,6 @@ SEXP genAPDescriptor(SEXP sdf)
 
 	SEXP atomblock = getAttrib(sdf,install("atomblock")); //named matrix
 	SEXP dimnames = getAttrib(atomblock,R_DimNamesSymbol);
-	int d = length(dimnames);
 	SEXP atomnames = VECTOR_ELT(dimnames,0);
 	int numAtoms = length(atomnames);
 	DEBUG_VAR(numAtoms);
@@ -199,7 +198,6 @@ SEXP genAPDescriptor(SEXP sdf)
 		}
 
 		//DEBUG_VAR(idStr);
-		int id = atoi(idStr);
 		int elemIndex = getElemIndex(elem);
 		if(elemIndex == -1){
 			error("element %s not found\n",elem);
@@ -215,9 +213,7 @@ SEXP genAPDescriptor(SEXP sdf)
 	SEXP bondblock = getAttrib(sdf,install("bondblock")); //named matrix
 	SEXP dims = getAttrib(bondblock,R_DimSymbol);
 	int nrows = INTEGER(dims)[0];
-	int ncols = INTEGER(dims)[1];
 	DEBUG_VAR(nrows);
-	DEBUG_VAR(ncols);
 
 
 	for(int row=0; row < nrows; row++)

@@ -481,6 +481,7 @@ void print_cluster_stat(DisjointSets &s,int print_pair = 0)
  * 2: for each point, print its cluster
  * other: print pairs, encoded in a single long int
  */
+/*
 #ifndef NO_MAIN
 int main(int argc, char* argv[])
 {
@@ -503,3 +504,4 @@ int main(int argc, char* argv[])
 	return 0;
 }
 #endif
+*/
