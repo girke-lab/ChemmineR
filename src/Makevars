@@ -1,1 +1,7 @@
+ifeq ($(shell uname),Darwin)
+     ifeq ($(shell R CMD config CXX),clang++)
+          PKG_CXXFLAGS += -stdlib=libstdc++
+          LDFLAGS += -stdlib=libstdc++
+      endif
+endif 
 PKG_CXXFLAGS +=  -DNO_MAIN -DNO_DEBUG

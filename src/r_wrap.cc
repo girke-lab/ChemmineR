@@ -727,6 +727,13 @@ SWIG_UnpackDataName(const char *c, void *ptr, size_t sz, const char *name) {
 }
 #endif
 
+#if !defined(SWIG_NO_R_NO_REMAP)
+# define R_NO_REMAP
+#endif
+#if !defined(SWIG_NO_STRICT_R_HEADERS)
+# define STRICT_R_HEADERS
+#endif
+
 #include "script.h"
 
 #include <Rdefines.h>
@@ -744,12 +751,6 @@ extern "C" {
 #endif
 
 /* Remove global namespace pollution */
-#if !defined(SWIG_NO_R_NO_REMAP)
-# define R_NO_REMAP
-#endif
-#if !defined(SWIG_NO_STRICT_R_HEADERS)
-# define STRICT_R_HEADERS
-#endif
 #if R_VERSION >= R_Version(2,6,0)
 #define VMAXTYPE void *
 #else
