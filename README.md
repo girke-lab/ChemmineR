@@ -1,0 +1,3 @@
+ ChemmineR is a cheminformatics package for analyzing drug-like small molecule data in R. Its latest version contains functions for efficient processing of large numbers of molecules, physicochemical/structural property predictions, structural similarity searching, classification and clustering of compound libraries with a wide spectrum of algorithms. In addition, it offers visualization functions for compound clustering results and chemical structures.
+
+  ChemmineR is hosted on [Bioconductor](http://www.bioconductor.org) where you can find the [Release](http://www.bioconductor.org/packages/2.14/bioc/html/ChemmineR.html) version and the [Development](http://www.bioconductor.org/packages/devel/bioc/html/ChemmineR.html) version.
