@@ -11,11 +11,25 @@ $if(date-meta)$
   <meta name="date" content="$date-meta$" />
 $endif$
   <title>$if(title-prefix)$$title-prefix$ - $endif$$if(pagetitle)$$pagetitle$$endif$</title>
-$if(highlighting-css)$
   <style type="text/css">
-$highlighting-css$
+	  table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+		    margin: 0; padding: 0; vertical-align: baseline; border: none; }
+		 table.sourceCode { width: 100%; }
+		 td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+		 td.sourceCode { padding-left: 5px; }
+		 code  span.kw { color: #007020; font-weight: bold; }
+		 code  span.dt { color: #902000; }
+		 code  span.dv { color: #40a070; }
+		 code  span.bn { color: #40a070; }
+		 code  span.fl { color: #40a070; }
+		 code  span.ch { color: #4070a0; }
+		 code  span.st { color: #4070a0; }
+		 code  span.co { color: #60a0b0; font-style: italic; }
+		 code  span.ot { color: #007020; }
+		 code  span.al { color: #ff0000; font-weight: bold; }
+		 code  span.fu { color: #06287e; }
+		 code  span.er { color: #ff0000; font-weight: bold; }
   </style>
-$endif$
 $for(css)$
   <link rel="stylesheet" href="$css$" $if(html5)$$else$type="text/css" $endif$/>
 $endfor$
