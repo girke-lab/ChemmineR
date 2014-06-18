@@ -9,7 +9,6 @@
 
 ```{r echo=FALSE, results='hide',message=FALSE,warning=FALSE,error=FALSE}
 library(ChemmineR) 
-library(ChemmineOB)
 library(knitcitations)
 ```
 <font color='red'>Porting this vignette to knitr is causing some formatting issues. This will be
