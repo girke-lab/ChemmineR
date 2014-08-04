@@ -10,6 +10,7 @@
 ```{r echo=FALSE, results='hide',message=FALSE,warning=FALSE,error=FALSE}
 library(ChemmineR) 
 library(knitcitations)
+RefManageR:::BibOptions(style="markdown")
 ```
 <font color='red'>Porting this vignette to knitr is causing some formatting issues. This will be
  resolved soon.</font>
@@ -1789,7 +1790,7 @@ Jarvis-Patrick Clustering
 -------------------------
 
 The Jarvis-Patrick clustering algorithm is widely used in
-cheminformatics `r citep(c("10.1109/T-C.1973.223640"))`. It requires a nearest neighbor table, which consists
+cheminformatics `r citep("http://ieeexplore.ieee.org/xpl/articleDetails.jsp?arnumber=1672233")`. It requires a nearest neighbor table, which consists
 of *j* nearest neighbors for each item (*e.g.* compound).
 The nearest neighbor table is then used to join items into clusters when
 they meet the following requirements: (a) they are contained in each
