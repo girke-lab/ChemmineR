@@ -234,7 +234,7 @@ OpenBabel Functions
 
 *ChemmineR* integrates now a subset of cheminformatics
 functionalities implemented in the OpenBabel C++ library 
-`r citep(c( "10.1186/1752-153X-2-5","10.1093/bioinformatics/btn307"))` . These
+`r citep(c("http://journal.chemistrycentral.com/content/2/1/5", "10.1093/bioinformatics/btn307" ))` . These
 utilities can be accessed by installing the *ChemmineOB*
 package and the OpenBabel software itself. *ChemmineR*
 will automatically detect the availability of
