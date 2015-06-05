@@ -1,8 +1,8 @@
 Package: ChemmineR
 Type: Package
 Title: Cheminformatics Toolkit for R
-Version: 2.20.2
-Date: 2015-06-03
+Version: 2.20.3
+Date: 2015-06-05
 Author: Y. Eddie Cao, Kevin Horan, Tyler Backman, Thomas Girke
 Maintainer: Thomas Girke <thomas.girke@ucr.edu>
 Description: ChemmineR is a cheminformatics package for analyzing drug-like small molecule data in R. Its latest version contains functions for efficient processing of large numbers of molecules, physicochemical/structural property predictions, structural similarity searching, classification and clustering of compound libraries with a wide spectrum of algorithms. In addition, it offers visualization functions for compound clustering results and chemical structures.
@@ -14,6 +14,6 @@ biocViews: Cheminformatics, BiomedicalInformatics, Pharmacogenetics,
 Imports: rjson, graphics,  stats, RCurl, DBI, digest, BiocGenerics, Rcpp (>= 0.11.0), ggplot2
 Suggests: RSQLite, scatterplot3d, gplots, fmcsR,snow, RPostgreSQL, BiocStyle,knitr,knitcitations, knitrBootstrap, ChemmineOB (>= 1.3.8), ChemmineDrugs, grid,gridExtra,png
 Enhances: ChemmineOB
-URL: http://manuals.bioinformatics.ucr.edu/home/chemminer
+URL: https://github.com/girke-lab/ChemmineR-release
 VignetteBuilder: knitr
 LinkingTo: Rcpp, BH
