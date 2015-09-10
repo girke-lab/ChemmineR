@@ -125,6 +125,9 @@ getIds <- function(cids) {
     if(! class(cids) == "numeric"){
         stop('reference compound ids must be of class \"numeric\"')
     }
+    if(length(cids) == 0){
+        stop('no compounds to retrieve- input must contain at least one cid')
+    }
     jobToken <- launchCMTool("pubchemID2SDF", cids)
     result(jobToken)
 }
@@ -146,5 +149,7 @@ searchSim <- function(sdf) {
         stop('reference compound must be a compound of class \"SDFset\"')
     } 
     jobToken <- launchCMTool('Fingerprint Search', sdf, 'Similarity Cutoff'=0.9, 'Max Compounds Returned'=200)
-    getIds(as.numeric(result(jobToken)))
+    cids <- as.numeric(result(jobToken))
+    if(length(cids) == 0) return(SDFset())
+    getIds(cids)
 }

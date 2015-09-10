@@ -1,8 +1,8 @@
 Package: ChemmineR
 Type: Package
 Title: Cheminformatics Toolkit for R
-Version: 2.20.3
-Date: 2015-06-05
+Version: 2.20.4
+Date: 2015-09-10
 Author: Y. Eddie Cao, Kevin Horan, Tyler Backman, Thomas Girke
 Maintainer: Thomas Girke <thomas.girke@ucr.edu>
 Description: ChemmineR is a cheminformatics package for analyzing drug-like small molecule data in R. Its latest version contains functions for efficient processing of large numbers of molecules, physicochemical/structural property predictions, structural similarity searching, classification and clustering of compound libraries with a wide spectrum of algorithms. In addition, it offers visualization functions for compound clustering results and chemical structures.
