@@ -5,6 +5,6 @@ all:
 	#"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" -e "library(knitr); knit('ChemmineR.Rmd')"
 	#pandoc --self-contained --output ChemmineR.html -H header.html --from markdown --smart --table-of-contents --template html.template ChemmineR.md;
 
-	"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" -e "library(knitrBootstrap); knit_bootstrap('${PKG_NAME}.Rmd',show_code=TRUE)"
+	"$(R_HOME)/bin$(R_ARCH_BIN)/Rscript" -e "library(knitrBootstrap); knit_bootstrap('${PKG_NAME}.Rmd')"
 clean:
 	rm -f *.md
