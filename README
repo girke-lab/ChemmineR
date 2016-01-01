@@ -1,4 +1,7 @@
 changelog
+    
+    version 2.22.1
+        - ported vignette to R Markdown
 
     version 2.15.17-2.21.7
         - biocViews updates

@@ -768,7 +768,8 @@ fpSim <- function(x, y, sorted=TRUE, method="Tanimoto",
 		beta = parameters$beta[numBitsSet]
 
 		evalues = dbSize*(1-pbeta(result,alpha,beta))
-		scores <<- data.frame(similarity=result,
+		# scores <<- data.frame(similarity=result, # ThG: replaced by next line on Dec 31, 2015 since build of R Markdown vignette returned error with '<<-'.
+		scores = data.frame(similarity=result,
 									 zscore=(result - avg) /sqrt(varience),
 									 evalue=evalues,
 									 pvalue=1-exp(-evalues))
