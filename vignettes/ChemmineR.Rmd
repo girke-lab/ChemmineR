@@ -45,9 +45,7 @@ suppressPackageStartupMessages({
     library(ChemmineR)
     library(ChemmineOB)
     library(fmcsR)
-    library(bioassayR)
     library(ggplot2)
-    library(ape)
 })
 ```
 
@@ -228,7 +226,7 @@ Assign matrix data to data block:
 ```
 
 
-String searching in `SDFset` (): 
+String searching in `SDFset`: 
 ```{r eval=FALSE, tidy=FALSE}
  grepSDFset("650001", sdfset, field="datablock", mode="subset") # Returns summary view of matches. Not printed here.
 ```
