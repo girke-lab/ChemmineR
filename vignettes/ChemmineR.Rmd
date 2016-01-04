@@ -1,6 +1,6 @@
 ---
 title: "_ChemmineR_: Cheminformatics Toolkit for R"
-author: "Authors: Kevin Horan, Yiqun Cao, Tyler Backman, [Thomas Girke](thomas.girke@ucr.edu)"
+author: "Authors: Kevin Horan, Yiqun Cao, Tyler Backman, [Thomas Girke](mailto:thomas.girke@ucr.edu)"
 date: "Last update: `r format(Sys.time(), '%d %B, %Y')`" 
 package: "`r pkg_ver('ChemmineR')`"
 output:
