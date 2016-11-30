@@ -45,7 +45,7 @@ initDb <- function(handle){
 enableForeignKeys <- function(conn){
 	#SQLite needs this to enable foreign key constrains, which are off by default
 	if(inherits(conn,"SQLiteConnection"))
-		dbSendQuery(conn,"PRAGMA foreign_keys = ON")
+		dbExecute(conn,"PRAGMA foreign_keys = ON")
 }
 
 dbTransaction <- function(conn,expr){
@@ -530,7 +530,7 @@ processAndLoad <- function(conn,names,defs,sdfset,featureFn,descriptors,updateBy
 		for(i in seq(along=deleteCompIds)){
 			cksum=names(deleteCompIds)[i]
 			id = deleteCompIds[i]
-			dbSendQuery(conn,paste("UPDATE compounds SET compound_id = ",id,
+			dbExecute(conn,paste("UPDATE compounds SET compound_id = ",id,
 										  " WHERE definition_checksum = '",cksum,"'",sep=""))
 		}
 
@@ -625,7 +625,7 @@ smile2sdfFile <- function(smileFile,sdfFile=tempfile()){
 
 deleteCompounds <- function(conn,compoundIds) {
 	if(length(compoundIds)!=0)
-		dbSendQuery(conn,paste("DELETE FROM compounds WHERE compound_id IN (",
+		dbExecute(conn,paste("DELETE FROM compounds WHERE compound_id IN (",
 							paste(compoundIds,collapse=","),")"))
 }
 
@@ -907,12 +907,12 @@ createFeature <- function(conn,name, isNumeric){
 rmDups <- function(data,columns) data[!duplicated(data[,columns]),]
 insertDef <- function(conn,data)  {
 	data = rmDups(data,"definition_checksum")
+	fields = c("definition","definition_checksum","format")
 	if(inherits(conn,"SQLiteConnection")){
-		dbGetPreparedQuery(conn,paste("INSERT INTO compounds(definition,definition_checksum,format) ",
-								 "VALUES(:definition,:definition_checksum,:format)",sep=""), bind.data=data)
+		getPreparedQuery(conn,paste("INSERT INTO compounds(definition,definition_checksum,format) ",
+								 "VALUES(:definition,:definition_checksum,:format)",sep=""), bind.data=data[fields])
 	}else if(inherits(conn,"PostgreSQLConnection")){
 		if(debug) print(data[,"definition_checksum"])
-		fields = c("definition","definition_checksum","format")
 		apply(data[,fields],1,function(row) dbOp(dbGetQuery(conn, 
 						 "INSERT INTO compounds(definition,definition_checksum,format) VALUES($1,$2,$3)",
 						 row)))
@@ -923,11 +923,11 @@ insertDef <- function(conn,data)  {
 
 insertNamedDef <- function(conn,data) {
 	data = rmDups(data,"definition_checksum")
+	fields = c("name","definition","definition_checksum","format")
 	if(inherits(conn,"SQLiteConnection")){
-		dbGetPreparedQuery(conn,paste("INSERT INTO compounds(name,definition,definition_checksum,format) ",
-								 "VALUES(:name,:definition,:definition_checksum,:format)",sep=""), bind.data=data)
+		getPreparedQuery(conn,paste("INSERT INTO compounds(name,definition,definition_checksum,format) ",
+								 "VALUES(:name,:definition,:definition_checksum,:format)",sep=""), bind.data=data[fields])
 	}else if(inherits(conn,"PostgreSQLConnection")){
-		fields = c("name","definition","definition_checksum","format")
 		postgresqlWriteTable(conn,"compounds",data[,fields],append=TRUE,row.names=FALSE)
 
 
@@ -938,11 +938,11 @@ insertNamedDef <- function(conn,data) {
 
 insertFeature <- function(conn,name,values){
 	if(debug) print(paste("name:",name))
+	fields = c("compound_id",name)
 	if(inherits(conn,"SQLiteConnection")){
-		dbGetPreparedQuery(conn, paste("INSERT INTO feature_",name,"(compound_id,",name,") ",
-												 "VALUES(:compound_id,:",name,")",sep=""), bind.data=values)
+		getPreparedQuery(conn, paste("INSERT INTO feature_",name,"(compound_id,",name,") ",
+												 "VALUES(:compound_id,:",name,")",sep=""), bind.data=values[fields])
 	}else if(inherits(conn,"PostgreSQLConnection")){
-		fields = c("compound_id",name)
 
 		postgresqlWriteTable(conn,paste("feature_",name,sep=""),values[,fields],append=TRUE,row.names=FALSE)
 
@@ -963,21 +963,23 @@ insertDescriptor <- function(conn,data){
 	uniqueDescriptors = rmDups(data,c("descriptor_type","descriptor_checksum"))
 
 	descTypes = descriptorTypes(conn)
+	fields1 = c("descriptor_type","descriptor","descriptor_checksum")
+	fields2 = c("definition_checksum","descriptor_type","descriptor_checksum")
 
 
 	if(inherits(conn,"SQLiteConnection")){
-		dbGetPreparedQuery(conn, paste("INSERT OR IGNORE INTO descriptors(descriptor_type_id,descriptor,descriptor_checksum) ",
+		getPreparedQuery(conn, paste("INSERT OR IGNORE INTO descriptors(descriptor_type_id,descriptor,descriptor_checksum) ",
 				"VALUES( (SELECT descriptor_type_id FROM descriptor_types WHERE descriptor_type = :descriptor_type), 
-							:descriptor,:descriptor_checksum )") ,bind.data=uniqueDescriptors)
-		dbGetPreparedQuery(conn, paste("INSERT INTO compound_descriptors(compound_id,
+							:descriptor,:descriptor_checksum )") ,bind.data=uniqueDescriptors[fields1])
+		getPreparedQuery(conn, paste("INSERT INTO compound_descriptors(compound_id,
 												 descriptor_id) ",
 				"VALUES( (SELECT compound_id FROM compounds WHERE definition_checksum = :definition_checksum),
 							(SELECT descriptor_id FROM descriptors JOIN descriptor_types USING(descriptor_type_id) 
 							 WHERE descriptor_type = :descriptor_type 
 								AND descriptor_checksum = :descriptor_checksum))"),
-						bind.data=data)
+						bind.data=data[fields2])
 	}else if(inherits(conn,"PostgreSQLConnection")){
-		apply(uniqueDescriptors[,c("descriptor_type","descriptor","descriptor_checksum")],1,function(row) {
+		apply(uniqueDescriptors[,fields1],1,function(row) {
 				row[1] = descTypes[row[1]] #translate descriptor_type to descriptor_type_id
 				dbTransaction(conn,
 					dbClearResult(dbSendQuery(conn, paste("INSERT INTO descriptors(descriptor_type_id,descriptor,descriptor_checksum) ",
@@ -986,7 +988,7 @@ insertDescriptor <- function(conn,data){
 									) ,row))
 				)
 			})
-		apply(data[,c("definition_checksum","descriptor_type","descriptor_checksum")],1,function(row) {
+		apply(data[,fields2],1,function(row) {
 			row[2] = descTypes[row[2]] #translate descriptor_type to descriptor_type_id
 			dbTransaction(conn,dbGetQuery(conn, paste("INSERT INTO compound_descriptors(compound_id,
 										  descriptor_id) ",
@@ -1000,7 +1002,7 @@ insertDescriptor <- function(conn,data){
 }
 insertDescriptorType <- function(conn,data){
 	if(inherits(conn,"SQLiteConnection")){
-		dbGetPreparedQuery(conn,"INSERT INTO descriptor_types(descriptor_type) VALUES(:descriptor_type)",
+		getPreparedQuery(conn,"INSERT INTO descriptor_types(descriptor_type) VALUES(:descriptor_type)",
 								 bind.data=data)
 	}else if(inherits(conn,"PostgreSQLConnection")){
 		apply(data,1,function(row) 
@@ -1013,7 +1015,7 @@ updatePriorities <- function(conn,data){
 	#message("updatePriorities (1-10): ")
 	#print(data[1:10,])
 	if(inherits(conn,"SQLiteConnection")){
-		dbGetPreparedQuery(conn,"UPDATE compound_descriptors SET priority = :priority WHERE compound_id=:compound_id AND
+		getPreparedQuery(conn,"UPDATE compound_descriptors SET priority = :priority WHERE compound_id=:compound_id AND
 								 descriptor_id=:descriptor_id", bind.data=data)
 	}else if(inherits(conn,"PostgreSQLConnection")){
 		apply(data[,c("compound_id","descriptor_id","priority")],1,function(row) 
@@ -1023,6 +1025,24 @@ updatePriorities <- function(conn,data){
 		stop("database ",class(conn)," unsupported")
 	}
 
+}
+
+getPreparedQuery <- function(conn,statement,bind.data){
+	#message("SQL statement: ")
+	#print(statement)
+	#message("data:")
+	#print(colnames(bind.data))
+
+	#dbSendPreparedQuery(conn,statement,bind.data)
+	
+	#print("sending query")
+	res <- dbSendQuery(conn,statement)
+	#print("after sendQuery")
+	on.exit(dbClearResult(res)) #clear result set when this function exits
+	#print("after exit callback registered")
+	dbBind(res,bind.data)
+	#print("after dbBind")
+	dbFetch(res)
 }
 
 
