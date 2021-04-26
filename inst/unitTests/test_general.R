@@ -3,7 +3,7 @@
 
 test.formatConversions <- function() {
 	if(! ChemmineR:::.haveOB()) 
-		DEACTIVATED("this test requires ChemmineOB, but not installed")
+		DEACTIVATED("this test requires ChemmineOB, but not available")
 	message("test.formatConversions")
 
 	data(sdfsample)
@@ -58,33 +58,34 @@ test.propOB <- function() {
 
 }
 test.fingerprintOB <- function(){
-	if(require(ChemmineOB)){
-		data(sdfsample)
-		fp = fingerprintOB(sdfsample[1:5],"FP2")
-		checkEquals(fptype(fp),"FP2")
-		fpSingle = fingerprintOB(sdfsample[1],"FP2")
-		checkEquals(as.character(class(fpSingle)),"FPset")
-		checkEqualsNumeric(as.matrix(fpSingle[1]), as.matrix(fp[1]))
-	}
+
+	if(! ChemmineR:::.haveOB()) 
+		DEACTIVATED("this test requires ChemmineOB, but not available")
+
+	data(sdfsample)
+	fp = fingerprintOB(sdfsample[1:5],"FP2")
+	checkEquals(fptype(fp),"FP2")
+	fpSingle = fingerprintOB(sdfsample[1],"FP2")
+	checkEquals(as.character(class(fpSingle)),"FPset")
+	checkEqualsNumeric(as.matrix(fpSingle[1]), as.matrix(fp[1]))
 }
 test.obmolRefs <- function() {
+	if(! ChemmineR:::.haveOB()) 
+		DEACTIVATED("this test requires ChemmineOB, but not available")
+
 	data(sdfsample)
-	if(require(ChemmineOB)){
-		obmolRef = obmol(sdfsample[[1]])
+	obmolRef = obmol(sdfsample[[1]])
 
-		checkEquals(class(obmolRef)[[1]],"_p_OpenBabel__OBMol")
+	checkEquals(class(obmolRef)[[1]],"_p_OpenBabel__OBMol")
 
-		obmolRefs = obmol(sdfsample)
-		checkEquals(class(obmolRefs),"list")
-		checkEquals(class(obmolRefs[[2]])[[1]],"_p_OpenBabel__OBMol")
-		checkEquals(length(sdfsample),length(obmolRefs))
-	}else
-		checkException(obmol(sdfsample[[1]]))
-
+	obmolRefs = obmol(sdfsample)
+	checkEquals(class(obmolRefs),"list")
+	checkEquals(class(obmolRefs[[2]])[[1]],"_p_OpenBabel__OBMol")
+	checkEquals(length(sdfsample),length(obmolRefs))
 }
 test.smartsSearchOB <- function(){
 	if(! ChemmineR:::.haveOB()) 
-		DEACTIVATED("this test requires ChemmineOB, but not installed")
+		DEACTIVATED("this test requires ChemmineOB, but not available")
 	data(sdfsample)
 	rotableBonds = smartsSearchOB(sdfsample[1:5],"[!$(*#*)&!D1]-!@[!$(*#*)&!D1]",uniqueMatches=FALSE)
 	print("rotable bonds: ")
@@ -139,7 +140,7 @@ test.fpSimParameters<- function(){
 }
 test.exactMassOB <- function(){
 	if(! ChemmineR:::.haveOB()) 
-		DEACTIVATED("this test requires ChemmineOB, but not installed")
+		DEACTIVATED("this test requires ChemmineOB, but not available")
 	data(sdfsample)
 	mass = exactMassOB(sdfsample[1:5])
 	checkEqualsNumeric(mass,c(456.2009,357.1801,
@@ -156,7 +157,7 @@ test.3dCoords <-function(){
 }
 test.canonicalize <- function(){
 	if(! ChemmineR:::.haveOB()) 
-		DEACTIVATED("this test requires ChemmineOB, but not installed")
+		DEACTIVATED("this test requires ChemmineOB, but not available")
 	data(sdfsample)
 	cansdf = canonicalize(sdfsample[1])
 
