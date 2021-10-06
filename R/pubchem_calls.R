@@ -83,7 +83,7 @@ pubchemInchi2cid <- function(inchis, verbose = TRUE) {
                 jsonlite::fromJSON(url(req_url))$IdentifierList$CID
             },
             error = function(e) {
-                return(NULL)
+                return(c("invalid" = 0))
             },
             warning = function(w) {
                 if(grep("400 Bad Request", w$message) == 1) cat("Invalid InChI, skip current one, No.", i, "\n", sep = "")
