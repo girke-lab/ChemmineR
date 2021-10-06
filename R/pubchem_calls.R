@@ -34,7 +34,7 @@ pubchemCidToSDF = function(cids){
 
 #' Query pubchem by InChI sttrings and return CIDs
 #' @description Use PubChem API to get CIDs by InChI sttrings. This function sends 
-#' one request per InChI. For curtecy, it is not recommended to parellelize this function. 
+#' one request per InChI. For courtesy, it is not recommended to parellelize this function. 
 #' @param inchis character vector, InChI strings
 #' @param verbose logical, show verbose information? 
 #' @return a numeric vector of CIDs with names. Successful requests will have empty 
