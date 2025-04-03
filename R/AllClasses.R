@@ -322,10 +322,14 @@ findPositions = function(sdf){
 		# <stereo care box>  STBOX
 		# <valence>   VAL			v2k: 15 indicates 0  v3: -1 indicates 0
 		standardAttrs = matrix(0,nrow(data),7)
+
+		AW <- atomprop$Atomic_weight
+		names(AW) <- atomprop$Symbol
+
 		for(i in seq(along=extAtomAttrs)){ # for each atom
 			mass = extAtomAttrs[[i]]$MASS
 			if(!is.null(mass)){
-				massDiff = mass - AW[data[i,2]]
+				massDiff = as.double(mass) - AW[data[i,2][[1]]]
 				standardAttrs[i,1] = massDiff
 			}
 			chg= extAtomAttrs[[i]]$CHG
