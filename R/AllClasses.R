@@ -738,7 +738,6 @@ setReplaceMethod(f="cid", signature="SDFset", definition=function(x, value) {
 })
 
 ## Replacement method for molecule name of each SDF in an SDFset using accessor methods
-setGeneric(name="sdfid<-", def=function(x, value) standardGeneric("sdfid<-"))
 setReplaceMethod(f="sdfid", signature="SDFset", definition=function(x, value) {
 	if(length(x@SDF) != length(value)){
 		stop("length of assigned value does not match length of assignee")
