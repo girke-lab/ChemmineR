@@ -878,16 +878,52 @@ sdf2smiles <- sdf2smilesOB
 
 
 smiles2sdfOB <- function(smiles) {
-    if(!any(class(smiles) %in% c("character", "SMIset"))){
-        stop('input must be SMILES strings stored as \"SMIset\" or \"character\" object')
-    }
-	 if(inherits(smiles,"SMIset")) smiles <- as.character(smiles)
-	 .ensureOB()
-	 sdf = definition2SDFset(convertFormat("SMI","SDF",paste(paste(smiles,names(smiles),sep="\t"), collapse="\n")))
-	 cid(sdf)=sdfid(sdf)
-	 sdf
+  if (!any(class(smiles) %in% c("character", "SMIset"))) {
+    stop('input must be SMILES strings stored as \"SMIset\" or \"character\" object')
+  }
+  if (inherits(smiles, "SMIset")) smiles <- as.character(smiles)
+  .ensureOB()
+
+  text_def <- ChemmineOB::convertFormat(
+    from = "SMI",
+    to = "SDF",
+    source = paste(paste(smiles, names(smiles), sep = "\t"), collapse = "\n")
+  )
+  # OpenBabel may stop at conversion errors
+  if (text_def == "") {
+    # First one failed, return an empty SDF
+    return(new("SDFset"))
+  }
+  sdf <- definition2SDFset(text_def)
+  cid(sdf) <- sdfid(sdf)
+  sdf
 }
-smiles2sdf <- smiles2sdfOB
+
+smiles2sdf <- function(smiles) {
+  i <- 0  # length of processed smiles 
+  j <- length(smiles)
+
+  # initialize empty SDFset
+  sdfset <- new("SDFset")
+
+  # OpenBabel may stop at conversion errors, process chunks if needed
+  while (i < j) {
+    # converted sdfset, truncated before first failing smile
+    new_sdfs <- smiles2sdfOB(smiles[(i+1):j])
+    k <- length(new_sdfs)
+    if (k > 0) {
+      sdfset <- c(sdfset, new_sdfs)
+      i <- i + k
+    }
+    # skip failed molecule in SDFset
+    if (i < j) {
+      i <- i + 1
+      warning("Could not convert ", names(smiles)[i], "'. Skipping.")
+    }
+  }
+  sdfset
+}
+
 
 regenCoordsOB <- function(sdf){
 	applyOptions(sdf,data.frame(names="gen2D",args=""))
