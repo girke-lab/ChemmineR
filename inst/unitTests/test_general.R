@@ -18,6 +18,38 @@ test.formatConversions <- function() {
 
 }
 
+test.invalidSmileParsing <- function() {
+  smiles <- c(
+    Caffein = "CN1C=NC2=C1C(=O)N(C(=O)N2C)C",
+    FailingSmile1 = "C1CCCCC",
+    FailingSmile2 = "CS(=O)=OG",
+    Fructose = "O[C@H]1[C@H](O)[C@H](O[C@]1(O)CO)CO"
+  )
+  sdfs <- smiles2sdf(smiles)
+  checkTrue(all(validSDF(sdfs)))
+  checkEquals(length(sdfs), 2)
+  checkTrue("Caffein" %in% sdfs@ID)
+  checkTrue("Fructose" %in% sdfs@ID)
+
+  # fail first
+  sdfs <- smiles2sdf(smiles[c(2, 3, 1, 4)])
+  checkTrue(all(validSDF(sdfs)))
+  checkEquals(length(sdfs), 2)
+  checkTrue("Caffein" %in% sdfs@ID)
+  checkTrue("Fructose" %in% sdfs@ID)
+
+  # fail last
+  sdfs <- smiles2sdf(smiles[c(1, 4, 2, 3)])
+  checkTrue(all(validSDF(sdfs)))
+  checkEquals(length(sdfs), 2)
+  checkTrue("Caffein" %in% sdfs@ID)
+  checkTrue("Fructose" %in% sdfs@ID)
+
+  # fail all
+  sdfs <- smiles2sdf(smiles[c(2, 3)])
+  checkEquals(length(sdfs), 0)
+}
+
 test.genAPDescriptors <- function(){
 
 	DEACTIVATED("removed old version of function")
