@@ -19,6 +19,9 @@ test.formatConversions <- function() {
 }
 
 test.invalidSmileParsing <- function() {
+	
+  if(! ChemmineR:::.haveOB()) 
+	   DEACTIVATED("this test requires ChemmineOB, but not available")
   smiles <- c(
     Caffein = "CN1C=NC2=C1C(=O)N(C(=O)N2C)C",
     FailingSmile1 = "C1CCCCC",
