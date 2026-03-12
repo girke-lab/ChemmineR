@@ -979,7 +979,7 @@ SWIG_MakePtr(void *ptr, const char *typeName, int flags)
     R_RegisterCFinalizer(external, R_SWIG_ReferenceFinalizer);
 
   r_obj = SET_SLOT(r_obj, Rf_mkString((char *) "ref"), external);
-  SET_S4_OBJECT(r_obj);
+  Rf_isS4(r_obj);
   Rf_unprotect(2);
 
   return(r_obj);
@@ -997,7 +997,7 @@ R_SWIG_create_SWIG_R_Array(const char *typeName, SEXP ref, int len)
    Rf_protect(arr = R_do_slot_assign(arr, Rf_mkString("dims"), Rf_ScalarInteger(len)));
 
    Rf_unprotect(3); 			   
-   SET_S4_OBJECT(arr);	
+   Rf_isS4(arr);	
    return arr;
 }
 
@@ -1020,7 +1020,7 @@ SWIG_R_NewPointerObj(void *ptr, swig_type_info *type, int flags) {
   }
   rptr = R_MakeExternalPtr(ptr, 
   R_MakeExternalPtr(type, R_NilValue, R_NilValue), R_NilValue); 
-  SET_S4_OBJECT(rptr);
+  Rf_isS4(rptr);
   return rptr;
 }
 
